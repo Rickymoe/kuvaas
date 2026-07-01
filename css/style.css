@@ -140,13 +140,6 @@ img { max-width: 100%; display: block; }
 .price-cat { margin-bottom: 36px; }
 .price-cat h3 { font-family: var(--serif); font-size: 1.3rem; margin-bottom: 14px; color: var(--terracotta-dark); }
 
-/* ===== Behandlinger ===== */
-.treatment-block { padding: 28px 0; border-bottom: 1px solid var(--line); }
-.treatment-block:last-child { border-bottom: none; }
-.treatment-block h3 { font-family: var(--serif); font-size: 1.25rem; margin-bottom: 10px; }
-.treatment-block p { color: var(--brown-soft); line-height: 1.75; margin-bottom: 10px; }
-.treatment-block p:last-child { margin-bottom: 0; }
-
 /* ===== Team (om oss) ===== */
 .team-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 24px; margin-top: 20px; }
 .team-card { background: #fff; border: 1px solid var(--line); border-radius: 16px; overflow: hidden; text-align: center; }
