@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="nb">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kontakt og informasjon – Tannklinikken Jack Kuvaas AS</title>
+<meta name="description" content="Kontaktinformasjon, åpningstider og avbestillingsregler for Tannklinikken Jack Kuvaas AS i Holmestrand.">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body data-page="kontakt">
+
+<div id="site-header"></div>
+
+<div class="page-hero wrap">
+  <div class="eyebrow reveal">Informasjon &amp; kontakt</div>
+  <h1 class="reveal" style="transition-delay:.08s">Vi hører gjerne fra deg</h1>
+  <p class="lead reveal" style="transition-delay:.16s">Spørsmål om behandling, timebestilling eller avbestilling? Ring oss, send e-post, eller bruk skjemaet under.</p>
+</div>
+
+<section class="section wrap" style="padding-top:0;border-top:none">
+  <div class="kontakt-grid">
+    <div class="form-card reveal" id="form-card">
+      <h2>Avbestillinger</h2>
+      <p style="color:var(--brown-soft);margin-bottom:28px;line-height:1.7">Avbestillinger må skje minst 24 timer før din time. Avbestillingen meldes på telefon 33 05 23 50 eller e-post <a href="mailto:tannlege@kuvaas.no" style="color:var(--terracotta-dark);font-weight:600">tannlege@kuvaas.no</a>. Avbestillinger skal ikke skje over Facebook eller andre kanaler.</p>
+
+      <h2>Send en melding</h2>
+      <div class="form-error" id="form-error">Noe gikk galt. Prøv igjen, eller send e-post direkte til <a href="mailto:tannlege@kuvaas.no">tannlege@kuvaas.no</a>.</div>
+      <form id="kontakt-form" onsubmit="sendForm(event)">
+        <div class="form-row">
+          <div class="form-group">
+            <label for="navn">Navn</label>
+            <input type="text" id="navn" name="navn" placeholder="Ditt navn" required>
+          </div>
+          <div class="form-group">
+            <label for="epost">E-post</label>
+            <input type="email" id="epost" name="email" placeholder="din@epost.no" required>
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="tlf">Telefon (valgfritt)</label>
+          <input type="tel" id="tlf" name="tlf" placeholder="+47 000 00 000">
+        </div>
+        <div class="form-group">
+          <label for="emne">Gjelder</label>
+          <select id="emne" name="emne">
+            <option value="">Velg kategori</option>
+            <option value="timebestilling">Timebestilling</option>
+            <option value="avbestilling">Avbestilling</option>
+            <option value="behandling">Spørsmål om behandling</option>
+            <option value="annet">Annet</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="melding">Melding</label>
+          <textarea id="melding" name="melding" placeholder="Beskriv hva du lurer på..." required></textarea>
+        </div>
+        <button type="submit" class="btn btn-terracotta form-submit">Send melding</button>
+        <p class="form-note">Vi svarer som regel innen én arbeidsdag.</p>
+      </form>
+      <div class="form-success" id="form-success">
+        <div class="check">
+          <svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+        </div>
+        <h3>Takk for meldingen!</h3>
+        <p>Vi tar kontakt snart.</p>
+      </div>
+    </div>
+
+    <div class="kontakt-info reveal" style="transition-delay:.1s">
+      <div class="kinfo-box">
+        <h4>Finn oss</h4>
+        <div class="kinfo-row"><span>Havnegaten 7<br>3080 Holmestrand</span></div>
+      </div>
+      <div class="kinfo-box">
+        <h4>Kontaktinfo</h4>
+        <div class="kinfo-row"><span><a href="mailto:tannlege@kuvaas.no">tannlege@kuvaas.no</a></span></div>
+        <div class="kinfo-row"><span><a href="tel:+4733052350">33 05 23 50</a></span></div>
+        <div class="kinfo-row"><span><a href="https://www.facebook.com/TannklinikkenJackKuvaas" target="_blank" rel="noopener">Facebook</a></span></div>
+      </div>
+      <div class="kinfo-box">
+        <h4>Åpningstider</h4>
+        <div class="kinfo-row"><span>Mandag–fredag<br>08:00–15:30<br><small style="color:var(--brown-soft)">Lunsjstengt 12:00–13:00. Telefonen stenger kl. 14:00 på fredager.</small></span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div id="site-footer"></div>
+<script>
+  async function sendForm(e) {
+    e.preventDefault();
+    const form = document.getElementById('kontakt-form');
+    const btn = form.querySelector('button[type="submit"]');
+    const errorBox = document.getElementById('form-error');
+
+    btn.disabled = true;
+    btn.textContent = 'Sender…';
+    errorBox.classList.remove('visible');
+
+    try {
+      const res = await fetch('https://formspree.io/f/FORMSPREE_ID', {
+        method: 'POST',
+        body: new FormData(form),
+        headers: { 'Accept': 'application/json' }
+      });
+
+      if (res.ok) {
+        form.style.display = 'none';
+        errorBox.style.display = 'none';
+        document.getElementById('form-success').style.display = 'block';
+      } else {
+        throw new Error('server');
+      }
+    } catch {
+      btn.disabled = false;
+      btn.textContent = 'Send melding';
+      errorBox.classList.add('visible');
+    }
+  }
+</script>
+<script src="js/main.js"></script>
+</body>
+</html>
