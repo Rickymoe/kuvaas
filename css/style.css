@@ -157,6 +157,19 @@ img { max-width: 100%; display: block; }
 /* ===== Kontaktskjema ===== */
 .kontakt-grid { display: grid; grid-template-columns: 1fr 380px; gap: 48px; align-items: start; }
 .form-card { background: #fff; border: 1px solid var(--line); border-radius: 20px; padding: 40px; }
+.postit {
+  background: #fff9c4;
+  border-left: 4px solid #f9a825;
+  border-radius: 4px 8px 8px 4px;
+  padding: 10px 14px;
+  margin-bottom: 24px;
+  box-shadow: 2px 3px 8px rgba(0,0,0,.12);
+  transform: rotate(-0.6deg);
+  font-size: 13px;
+  color: #c0392b;
+  font-family: var(--sans);
+  line-height: 1.5;
+}
 .form-card h2 { font-family: var(--serif); font-weight: 600; font-size: 1.5rem; margin-bottom: 26px; }
 .form-group { margin-bottom: 18px; }
 .form-group label { display: block; font-size: 13px; font-weight: 600; color: var(--brown-soft); margin-bottom: 8px; letter-spacing: .03em; }
