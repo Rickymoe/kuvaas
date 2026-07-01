@@ -95,9 +95,25 @@ img { max-width: 100%; display: block; }
 }
 
 /* ===== Hero ===== */
-.hero { padding-top: 100px; padding-bottom: 80px; background: linear-gradient(135deg, var(--cream-deep), var(--cream)); border-bottom: 1px solid var(--line); }
-.hero h1 { font-family: var(--serif); font-style: italic; font-weight: 600; font-size: clamp(2rem, 5vw, 3.2rem); color: var(--brown); line-height: 1.15; }
+.hero {
+  position: relative;
+  min-height: 560px;
+  display: flex;
+  align-items: center;
+  padding-top: 100px;
+  padding-bottom: 80px;
+  background:
+    linear-gradient(100deg, rgba(74,59,42,.88) 0%, rgba(74,59,42,.55) 45%, rgba(74,59,42,.15) 75%),
+    url('../Bilder/havn-hero.jpg') center / cover no-repeat;
+  border-bottom: 1px solid var(--line);
+}
+.hero .wrap { max-width: 640px; }
+.hero .eyebrow { color: var(--cream-deep); }
+.hero .lead { color: rgba(253,246,236,.92); }
+.hero h1 { font-family: var(--serif); font-style: italic; font-weight: 600; font-size: clamp(2rem, 5vw, 3.2rem); color: #fff; line-height: 1.15; }
 .hero-cta { display: flex; gap: 14px; margin-top: 30px; flex-wrap: wrap; }
+.hero-cta .btn-outline { border-color: rgba(255,255,255,.7); color: #fff; }
+.hero-cta .btn-outline:hover { background: rgba(255,255,255,.15); }
 
 .page-hero { padding-top: 60px; padding-bottom: 40px; }
 .page-hero h1 { font-family: var(--serif); font-style: italic; font-weight: 600; font-size: clamp(1.8rem, 4vw, 2.6rem); color: var(--brown); }
