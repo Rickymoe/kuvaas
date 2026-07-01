@@ -115,8 +115,9 @@ img { max-width: 100%; display: block; }
 .hero-cta .btn-outline { border-color: rgba(255,255,255,.7); color: #fff; }
 .hero-cta .btn-outline:hover { background: rgba(255,255,255,.15); }
 
-.page-hero { padding-top: 60px; padding-bottom: 40px; }
+.page-hero { padding-top: 60px; padding-bottom: 40px; position: relative; }
 .page-hero h1 { font-family: var(--serif); font-style: italic; font-weight: 600; font-size: clamp(1.8rem, 4vw, 2.6rem); color: var(--brown); }
+.page-hero-watermark { position: absolute; top: 50%; right: -40px; transform: translateY(-50%); width: 320px; max-width: 40vw; opacity: .06; pointer-events: none; z-index: -1; }
 
 /* ===== Service row (forside) ===== */
 .service-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
