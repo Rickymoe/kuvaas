@@ -1,0 +1,45 @@
+name: Update Google rating
+
+on:
+  schedule:
+    - cron: '0 6 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  update-rating:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Fetch rating from Google Places API
+        env:
+          GOOGLE_PLACES_API_KEY: ${{ secrets.GOOGLE_PLACES_API_KEY }}
+        run: |
+          RESPONSE=$(curl -s "https://maps.googleapis.com/maps/api/place/findplacefromtext/json?input=Tannklinikken+Jack+Kuvaas+AS%2C+Havnegaten+7%2C+3080+Holmestrand&inputtype=textquery&fields=rating,user_ratings_total&key=${GOOGLE_PLACES_API_KEY}")
+          RATING=$(echo "$RESPONSE" | jq -r '.candidates[0].rating')
+          COUNT=$(echo "$RESPONSE" | jq -r '.candidates[0].user_ratings_total')
+
+          if [ "$RATING" = "null" ] || [ -z "$RATING" ] || [ "$COUNT" = "null" ] || [ -z "$COUNT" ]; then
+            echo "Could not read rating from response:"
+            echo "$RESPONSE"
+            exit 1
+          fi
+
+          RATING_NB=$(echo "$RATING" | sed 's/\./,/')
+          sed -i "s|<span id=\"rating-value\">[^<]*</span>|<span id=\"rating-value\">${RATING_NB}</span>|" index.html
+          sed -i "s|<span id=\"rating-count\">[^<]*</span>|<span id=\"rating-count\">${COUNT}</span>|" index.html
+
+      - name: Commit and push if changed
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          if git diff --quiet -- index.html; then
+            echo "Rating unchanged, nothing to commit."
+          else
+            git add index.html
+            git commit -m "Auto-update Google rating badge"
+            git push
+          fi
