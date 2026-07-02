@@ -72,6 +72,12 @@ img { max-width: 100%; display: block; }
   border-radius: 100px; font-size: 14px; font-weight: 600; transition: background .2s;
 }
 .nav-cta:hover, .nav-cta.active { background: var(--terracotta-dark); }
+.nav-hamburger {
+  display: none; flex-direction: column; gap: 5px; background: rgba(253,246,236,.85);
+  border: none; border-radius: 50%; cursor: pointer; padding: 8px;
+  box-shadow: 0 2px 12px rgba(74,59,42,.14);
+}
+.nav-hamburger span { width: 22px; height: 2px; background: var(--brown); display: block; }
 
 @media (max-width: 900px) {
   .nav-links {
@@ -108,12 +114,6 @@ img { max-width: 100%; display: block; }
   background: var(--cream-deep);
   box-shadow: 0 4px 16px rgba(74,59,42,.2);
 }
-.nav-hamburger {
-  display: none; flex-direction: column; gap: 5px; background: rgba(253,246,236,.85);
-  border: none; border-radius: 50%; cursor: pointer; padding: 8px;
-  box-shadow: 0 2px 12px rgba(74,59,42,.14);
-}
-.nav-hamburger span { width: 22px; height: 2px; background: var(--brown); display: block; }
 
 /* ===== Hero ===== */
 .hero {
@@ -185,6 +185,12 @@ img { max-width: 100%; display: block; }
 
 body[data-page="om-oss"] .about-photo { object-position: 50% 12%; }
 body[data-page="om-oss"] .about-text--card .eyebrow { margin-top: 220px; }
+
+@media (max-width: 860px) {
+  .about-card-watermark { width: 110px; top: 16px; left: -8px; }
+  .about-text--card .eyebrow,
+  body[data-page="om-oss"] .about-text--card .eyebrow { margin-top: 90px; }
+}
 
 /* ===== Hero card without a photo: icon + text side by side ===== */
 .hero-card--split { flex-direction: row; justify-content: flex-start; align-items: center; gap: 40px; overflow: visible; }
