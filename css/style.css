@@ -200,6 +200,9 @@ img { max-width: 100%; display: block; }
   overflow: hidden;
 }
 .about-card-watermark { position: absolute; top: 24px; left: -8px; width: 200px; opacity: 1; }
+.om-text-block { position: relative; }
+.om-text-heart { position: absolute; width: 170px; top: -50px; left: 140px; opacity: .08; z-index: -1; pointer-events: none; }
+@media (max-width: 860px) { .om-text-heart { width: 110px; left: 40px; top: -30px; } }
 .about-text--card .eyebrow {
   margin-top: 180px;
   font-size: 20px;
