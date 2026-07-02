@@ -244,6 +244,35 @@ body[data-page="om-oss"] .about-text--card .eyebrow { margin-top: 220px; }
 .team-group-title { font-family: var(--serif); font-size: 1.3rem; margin: 40px 0 4px; color: var(--terracotta-dark); }
 .team-group-title:first-of-type { margin-top: 10px; }
 
+/* ===== Klinikken (arbeidsside, kun lokalt) ===== */
+.klinikk-gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 24px; }
+.klinikk-photo { background: #fff; border: 1px solid var(--line); border-radius: 16px; overflow: hidden; }
+.klinikk-photo img { width: 100%; aspect-ratio: 4/5; object-fit: cover; display: block; }
+.klinikk-caption { padding: 12px 16px; font-size: 13px; color: var(--brown-soft); font-family: monospace; }
+
+.klinikk-editorial {
+  display: grid; grid-template-columns: repeat(2, 1fr); gap: 24px;
+  background: var(--cream-deep); border-radius: 24px; padding: 32px;
+}
+@media (max-width: 700px) { .klinikk-editorial { grid-template-columns: 1fr; } }
+.klinikk-card { position: relative; border-radius: 18px; overflow: hidden; aspect-ratio: 3/4; }
+.klinikk-card img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.klinikk-card .klinikk-tag {
+  position: absolute; top: 16px; left: 16px;
+  background: rgba(253,246,236,.92); color: var(--brown);
+  font-size: 11px; letter-spacing: .1em; text-transform: uppercase; font-weight: 700;
+  padding: 7px 14px; border-radius: 100px;
+}
+.klinikk-card .klinikk-overlay {
+  position: absolute; inset: 0; display: flex; flex-direction: column; justify-content: flex-end;
+  padding: 26px; background: linear-gradient(180deg, rgba(74,59,42,0) 45%, rgba(74,59,42,.86) 100%);
+}
+.klinikk-card h3 {
+  font-family: var(--serif); font-style: italic; font-weight: 600;
+  font-size: 1.5rem; line-height: 1.2; color: #fff;
+}
+.klinikk-card p { font-size: 13px; color: rgba(253,246,236,.85); margin-top: 8px; }
+
 /* ===== Footer ===== */
 .footer { background: var(--brown); color: var(--cream); padding: 60px 0 26px; }
 .footer-grid { display: grid; grid-template-columns: 1.4fr 1fr 1fr; gap: 40px; margin-bottom: 36px; }
