@@ -187,7 +187,7 @@ body[data-page="om-oss"] .about-photo { object-position: 50% 12%; }
 body[data-page="om-oss"] .about-text--card .eyebrow { margin-top: 220px; }
 
 /* ===== Hero card without a photo: icon + text side by side ===== */
-.hero-card--split { flex-direction: row; align-items: center; gap: 40px; overflow: visible; }
+.hero-card--split { flex-direction: row; justify-content: flex-start; align-items: center; gap: 40px; overflow: visible; }
 .hero-card--split .hero-card-icon { flex: 0 0 auto; text-align: center; }
 .hero-card--split .about-card-watermark { position: static; width: 110px; opacity: 1; margin: 0 auto 10px; display: block; }
 .hero-card--split .eyebrow { margin-top: 0; white-space: nowrap; }
