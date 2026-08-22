@@ -22,17 +22,17 @@ jobs:
         with:
           node-version: 18
 
-      - name: Hent prisliste fra Google Sheet og bygg priser.html
+      - name: Hent prisliste fra Google Sheet og bygg priser.html og index.html
         run: node scripts/update-priser.js
 
       - name: Commit og push hvis noe endret seg
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          if git diff --quiet -- priser.html; then
+          if git diff --quiet -- priser.html index.html; then
             echo "Ingen prisendringer, committer ikke."
           else
-            git add priser.html
+            git add priser.html index.html
             git commit -m "Auto-oppdater prisliste fra Google Sheet"
             git push
           fi
