@@ -1,0 +1,38 @@
+name: Update prisliste
+
+on:
+  schedule:
+    # 20:00 og 07:00 UTC = 21:00 og 08:00 norsk vintertid (CET) --
+    # cron kjenner ikke til DST, så begge drifter én time senere
+    # (22:00/09:00 lokalt) om sommeren (CEST). God nok presisjon.
+    - cron: '0 20 * * *'
+    - cron: '0 7 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  update-priser:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 18
+
+      - name: Hent prisliste fra Google Sheet og bygg priser.html
+        run: node scripts/update-priser.js
+
+      - name: Commit og push hvis noe endret seg
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          if git diff --quiet -- priser.html; then
+            echo "Ingen prisendringer, committer ikke."
+          else
+            git add priser.html
+            git commit -m "Auto-oppdater prisliste fra Google Sheet"
+            git push
+          fi
