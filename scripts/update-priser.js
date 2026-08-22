@@ -140,9 +140,17 @@ async function main() {
   for (const r of dataRows) {
     const kategori = r[iKategori].trim()
     const behandling = r[iBehandling].trim()
-    const belop = parseInt(r[iPris].trim(), 10)
+    // Whole-string digit match (not parseInt, which would silently accept
+    // "-500" or "5555abc" by parsing only its leading numeric part) --
+    // a price must be nothing but digits, and must be positive. Both
+    // matter for a dental clinic's own prices: a stray minus sign or typo
+    // reaching the live site as "kr -500,-" would be a real embarrassment,
+    // not just a cosmetic bug (this exact scenario was caught live before
+    // this check existed).
+    const priceRaw = r[iPris].trim()
+    const belop = /^\d+$/.test(priceRaw) ? parseInt(priceRaw, 10) : NaN
     const fra = r[iFra].trim().toLowerCase() === 'ja'
-    if (!kategori || !behandling || Number.isNaN(belop)) {
+    if (!kategori || !behandling || Number.isNaN(belop) || belop <= 0) {
       console.warn(`Skipping malformed row: ${JSON.stringify(r)}`)
       continue
     }
