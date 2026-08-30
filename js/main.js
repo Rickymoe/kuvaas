@@ -37,10 +37,21 @@ function initNav() {
 }
 
 function initReveal() {
+  // Flagg til head-scriptets failsafe: reveal-oppsettet kjørte, så det trenger
+  // ikke tvinge alt synlig etter load.
+  window.__revealReady = true;
+
+  if (!('IntersectionObserver' in window)) {
+    document.querySelectorAll('.reveal').forEach(el => el.classList.add('visible'));
+    return;
+  }
+  // Stagger settes med transition-delay i markup der det er ønsket -- ikke via
+  // setTimeout (den gamle i*60-varianten staggeret aldri på mobil, der
+  // elementene entrer ett og ett).
   const io = new IntersectionObserver(entries => {
-    entries.forEach((entry, i) => {
+    entries.forEach(entry => {
       if (entry.isIntersecting) {
-        setTimeout(() => entry.target.classList.add('visible'), i * 60);
+        entry.target.classList.add('visible');
         io.unobserve(entry.target);
       }
     });
