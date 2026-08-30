@@ -289,13 +289,17 @@ img { max-width: 100%; display: block; }
 .om-text-block p:last-of-type { margin-bottom: var(--space-8); }
 .om-text-heart { position: absolute; width: 170px; top: -50px; left: 140px; opacity: .08; z-index: -1; pointer-events: none; }
 @media (max-width: 860px) { .om-text-heart { width: 110px; left: 40px; top: -30px; } }
-.about-text--card .eyebrow {
+/* Egen klasse (ikke en kontekst-avhengig overstyring av .eyebrow) -- issue #8.
+   Samme plass som en eyebrow (over h1), men en 22px serif-italic sidetittel,
+   ikke en liten uppercase-kicker. Brukt i hero-kortene på de indre sidene. */
+.eyebrow-serif {
+  display: inline-block;
+  margin-bottom: var(--space-3);
+  font-family: var(--serif);
+  font-style: italic;
   font-size: var(--text-xl);
   font-weight: 500;
   letter-spacing: .04em;
-  text-transform: none;
-  font-family: var(--serif);
-  font-style: italic;
   color: var(--terracotta-tekst);
 }
 
@@ -318,7 +322,7 @@ body[data-page="om-oss"] .about-photo { object-position: 50% 12%; }
 .hero-card--split { flex-direction: row; justify-content: flex-start; align-items: center; gap: 40px; overflow: visible; }
 .hero-card--split .hero-card-icon { flex: 0 0 auto; text-align: center; }
 .hero-card--split .about-card-watermark { position: static; width: 110px; opacity: 1; margin: 0 auto 10px; display: block; }
-.hero-card--split .eyebrow { margin-top: 0; white-space: nowrap; }
+.hero-card--split .eyebrow-serif { margin-top: 0; white-space: nowrap; }
 .hero-card--split .hero-card-text { flex: 1; }
 .hero-card--split .hero-card-text h1 { margin: 0; }
 .hero-card--split .hero-card-text .lead { max-width: none; }
