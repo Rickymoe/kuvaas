@@ -285,6 +285,14 @@ img { max-width: 100%; display: block; }
   padding: 4rem var(--space-6);
   border: 1px solid var(--line);
   border-radius: 24px;
+  transition: border-color .25s ease, box-shadow .25s ease, transform .25s ease;
+}
+@media (hover: hover) {
+  .quick-info-row:hover {
+    border-color: rgba(166, 101, 63, .45);
+    box-shadow: var(--skygge-sm);
+    transform: translateY(-2px);
+  }
 }
 .quick-info { display: flex; align-items: center; gap: var(--space-4); }
 .quick-info-icon {
@@ -504,7 +512,7 @@ button:disabled { opacity: .6; cursor: not-allowed; }
     transition-duration: 0.001ms !important;
   }
   .reveal, .js .reveal { opacity: 1 !important; transform: none !important; }
-  .btn:hover, .link-all:hover { transform: none; }
+  .btn:hover, .link-all:hover, .quick-info-row:hover { transform: none; }
   .hero-photo { animation: none !important; transform: scale(1.07); }
   .rating-stars .stars-fyll { transition: none !important; }
 }
