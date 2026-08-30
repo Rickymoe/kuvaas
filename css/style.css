@@ -282,7 +282,7 @@ img { max-width: 100%; display: block; }
 .quick-info-row {
   display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-5);
   margin-block: var(--space-6);
-  padding: 3.25rem var(--space-6);
+  padding: 4rem var(--space-6);
   border: 1px solid var(--line);
   border-radius: 24px;
 }
