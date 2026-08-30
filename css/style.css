@@ -77,8 +77,10 @@ img { max-width: 100%; display: block; }
 .lead-strong { max-width: none; font-weight: 600; color: var(--brown); }
 
 /* Innhold som fortsetter rett under en page-hero uten ny skillelinje (issue #6) */
-.section--flush { border-top: none; }
-.section--continued { border-top: none; padding-top: 0; }
+/* .section.section--* -- doblet klasse så modifieren vinner over .section-basen
+   uansett kildeorden (basen står lenger ned i fila). */
+.section.section--flush { border-top: none; }
+.section.section--continued { border-top: none; padding-top: 0; }
 .section-intro { max-width: 60ch; color: var(--brown-soft); margin-bottom: var(--space-6); }
 .lenke-terra { color: var(--terracotta-dark); font-weight: 600; }
 .dempet { color: var(--brown-soft); }
@@ -170,14 +172,20 @@ img { max-width: 100%; display: block; }
   box-shadow: var(--skygge-md);
 }
 
-/* ===== Hero ===== */
-.hero {
-  position: relative;
+/* ===== Hero =====
+   Innrammet bildepanel (issue #9, alt. 2) -- ikke fullbredde. Panelet ligger
+   i sidemargen som resten av siden, teksten venstrestilt inni det over den
+   mørke venstresonen av gradienten (100deg). */
+.hero { padding-block: var(--space-6); }
+.hero-panel {
+  max-width: 1180px;
+  margin-inline: auto;
   min-height: 560px;
   display: flex;
   align-items: center;
-  padding-top: 100px;
-  padding-bottom: 80px;
+  padding: clamp(2.5rem, 5vw, 5rem);
+  border-radius: 24px;
+  overflow: hidden;
   background:
     linear-gradient(100deg,
       rgba(74,59,42,.93) 0%,
@@ -185,12 +193,22 @@ img { max-width: 100%; display: block; }
       rgba(74,59,42,.34) 62%,
       rgba(74,59,42,.10) 85%),
     url('../Bilder/havn-hero.jpg') center / cover no-repeat;
-  border-bottom: 1px solid var(--line);
+  box-shadow: 0 20px 48px -20px rgba(74,59,42,.32);
 }
-/* Venstrestilt: teksten ligger over den mørke venstre­sonen av gradienten
-   (100deg -> mørkest til venstre), ikke midt i det travle fotoet (issue #9).
-   margin-inline: 0 overstyrer .wrap sin auto-sentrering. */
-.hero .wrap { max-width: 620px; margin-inline: 0; }
+.hero-content { max-width: 540px; }
+
+@media (max-width: 1240px) { .hero-panel { margin-inline: 32px; } }
+@media (max-width: 640px) {
+  .hero { padding-block: 0; }
+  .hero-panel {
+    margin-inline: 0;
+    border-radius: 0;
+    padding: 5rem 20px 3rem;
+    min-height: 440px;
+    box-shadow: none;
+  }
+}
+
 .hero .eyebrow { color: var(--cream-deep); }
 .hero .lead { color: rgba(253,246,236,.95); }
 .hero h1 { font-family: var(--serif); font-style: italic; font-weight: 500; font-size: var(--text-3xl); color: #fff; line-height: var(--lh-tett); }
