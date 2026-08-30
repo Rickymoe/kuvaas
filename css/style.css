@@ -205,14 +205,15 @@ img { max-width: 100%; display: block; }
   height: 100%;
   object-fit: cover;
   z-index: 0;
-  /* Rolig Ken Burns -- bildet "lever" uten å distrahere. Starter på 1.06 så
-     kantene aldri viser seg under panoreringen. Klippes av .hero-panel. */
-  transform: scale(1.06);
-  animation: hero-drift 34s ease-in-out infinite alternate;
+  /* Rolig Ken Burns -- bildet "lever" uten å distrahere. Starter på 1.08 så
+     kantene aldri viser seg under panoreringen (overheng > pan). Klippes av
+     .hero-panel overflow:hidden. */
+  transform: scale(1.08);
+  animation: hero-drift 26s ease-in-out infinite alternate;
 }
 @keyframes hero-drift {
-  from { transform: scale(1.06) translate3d(0, 0, 0); }
-  to   { transform: scale(1.13) translate3d(-1.6%, -1.2%, 0); }
+  from { transform: scale(1.08) translate3d(0, 0, 0); }
+  to   { transform: scale(1.2) translate3d(-3.5%, -2.6%, 0); }
 }
 .hero-panel::after {
   content: "";
@@ -497,6 +498,6 @@ button:disabled { opacity: .6; cursor: not-allowed; }
   }
   .reveal, .js .reveal { opacity: 1 !important; transform: none !important; }
   .btn:hover, .link-all:hover { transform: none; }
-  .hero-photo { animation: none !important; transform: scale(1.06); }
+  .hero-photo { animation: none !important; transform: scale(1.08); }
   .rating-stars .stars-fyll { transition: none !important; }
 }
