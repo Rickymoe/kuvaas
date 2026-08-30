@@ -179,13 +179,20 @@ img { max-width: 100%; display: block; }
   padding-top: 100px;
   padding-bottom: 80px;
   background:
-    linear-gradient(100deg, rgba(74,59,42,.88) 0%, rgba(74,59,42,.55) 45%, rgba(74,59,42,.15) 75%),
+    linear-gradient(100deg,
+      rgba(74,59,42,.93) 0%,
+      rgba(74,59,42,.74) 38%,
+      rgba(74,59,42,.34) 62%,
+      rgba(74,59,42,.10) 85%),
     url('../Bilder/havn-hero.jpg') center / cover no-repeat;
   border-bottom: 1px solid var(--line);
 }
-.hero .wrap { max-width: 640px; }
+/* Venstrestilt: teksten ligger over den mørke venstre­sonen av gradienten
+   (100deg -> mørkest til venstre), ikke midt i det travle fotoet (issue #9).
+   margin-inline: 0 overstyrer .wrap sin auto-sentrering. */
+.hero .wrap { max-width: 620px; margin-inline: 0; }
 .hero .eyebrow { color: var(--cream-deep); }
-.hero .lead { color: rgba(253,246,236,.92); }
+.hero .lead { color: rgba(253,246,236,.95); }
 .hero h1 { font-family: var(--serif); font-style: italic; font-weight: 500; font-size: var(--text-3xl); color: #fff; line-height: var(--lh-tett); }
 .hero-cta { display: flex; gap: var(--space-3); margin-top: var(--space-6); flex-wrap: wrap; }
 .hero-cta .btn-outline { border-color: rgba(255,255,255,.7); color: #fff; }
