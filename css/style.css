@@ -407,8 +407,11 @@ body[data-page="om-oss"] .about-photo { object-position: 50% 12%; }
 
 /* ===== Priser ===== */
 .price-teaser-grid, .price-list { display: flex; flex-direction: column; gap: 2px; background: var(--line); border-radius: 12px; overflow: hidden; }
-.price-row { display: flex; justify-content: space-between; gap: var(--space-4); background: var(--flate); padding: var(--space-4) var(--space-5); font-size: var(--text-md); }
+.price-row { display: flex; justify-content: space-between; gap: var(--space-4); background: var(--flate); padding: var(--space-4) var(--space-5); font-size: var(--text-md); transition: background-color .2s ease; }
 .price-row strong { color: var(--terracotta-tekst); white-space: nowrap; }
+@media (hover: hover) {
+  .price-row:hover { background: rgba(166, 101, 63, .07); }
+}
 .price-cat { margin-bottom: var(--space-8); }
 .price-cat h3 { font-family: var(--serif); font-weight: 500; font-size: var(--text-xl); margin-bottom: var(--space-3); color: var(--terracotta-tekst); }
 
