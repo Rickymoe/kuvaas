@@ -178,6 +178,7 @@ img { max-width: 100%; display: block; }
    mørke venstresonen av gradienten (100deg). */
 .hero { padding-block: var(--space-6); }
 .hero-panel {
+  position: relative;
   max-width: 1180px;
   margin-inline: auto;
   min-height: 560px;
@@ -186,16 +187,30 @@ img { max-width: 100%; display: block; }
   padding: clamp(2.5rem, 5vw, 5rem);
   border-radius: 24px;
   overflow: hidden;
-  background:
-    linear-gradient(100deg,
-      rgba(74,59,42,.93) 0%,
-      rgba(74,59,42,.74) 38%,
-      rgba(74,59,42,.34) 62%,
-      rgba(74,59,42,.10) 85%),
-    url('../Bilder/havn-hero.jpg') center / cover no-repeat;
   box-shadow: 0 20px 48px -20px rgba(74,59,42,.32);
 }
-.hero-content { max-width: 540px; }
+/* Ekte <img> (ikke CSS background) -- gir alt-tekst, lazy/priority-hint og SEO.
+   Gradienten ligger som ::after oppå bildet, teksten over igjen. */
+.hero-photo {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  z-index: 0;
+}
+.hero-panel::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background: linear-gradient(100deg,
+    rgba(74,59,42,.93) 0%,
+    rgba(74,59,42,.74) 38%,
+    rgba(74,59,42,.34) 62%,
+    rgba(74,59,42,.10) 85%);
+}
+.hero-content { position: relative; z-index: 2; max-width: 540px; }
 
 @media (max-width: 1240px) { .hero-panel { margin-inline: 32px; } }
 @media (max-width: 640px) {
@@ -395,19 +410,6 @@ body[data-page="om-oss"] .about-photo { object-position: 50% 12%; }
 .kontakt-grid { display: grid; grid-template-columns: 1fr 380px; gap: var(--space-8); align-items: start; }
 .form-card { background: var(--flate); border: 1px solid var(--line); border-radius: 20px; padding: var(--space-7); }
 .form-intro { color: var(--brown-soft); margin-bottom: var(--space-6); line-height: var(--lh-brod); }
-.postit {
-  background: #fff9c4;
-  border-left: 4px solid #f9a825;
-  border-radius: 4px 8px 8px 4px;
-  padding: 10px 14px;
-  margin-bottom: var(--space-5);
-  box-shadow: 2px 3px 8px rgba(0,0,0,.12);
-  transform: rotate(-0.6deg);
-  font-size: var(--text-sm);
-  color: #c0392b;
-  font-family: var(--sans);
-  line-height: var(--lh-snau);
-}
 .form-card h2 { font-family: var(--serif); font-weight: 500; font-size: var(--text-xl); margin-bottom: var(--space-5); }
 .form-group { margin-bottom: var(--space-4); }
 .form-group label { display: block; font-size: var(--text-sm); font-weight: 600; color: var(--brown-soft); margin-bottom: var(--space-2); letter-spacing: .03em; }
