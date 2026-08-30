@@ -350,7 +350,7 @@ img { max-width: 100%; display: block; }
 .about-text--card {
   position: relative;
   background: var(--cream);
-  border: 1px solid #fff;
+  border: 1px solid var(--line);
   border-radius: 20px;
   padding: var(--space-7);
   display: flex;
