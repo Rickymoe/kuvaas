@@ -311,7 +311,17 @@ img { max-width: 100%; display: block; }
    sekvens, så et langt kort skal ikke strekke nabokortene med tomme bunner
    (issue #2). Nummereringen (01/02/...) er fjernet av samme grunn. */
 .service-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-5); align-items: start; }
-.service-card { background: var(--cream-deep); border: 1px solid var(--line); border-radius: 16px; padding: var(--space-6); }
+.service-card {
+  background: var(--cream-deep); border: 1px solid var(--line); border-radius: 16px; padding: var(--space-6);
+  transition: border-color .25s ease, box-shadow .25s ease, transform .25s ease;
+}
+@media (hover: hover) {
+  .service-card:hover {
+    border-color: rgba(166, 101, 63, .45);
+    box-shadow: var(--skygge-sm);
+    transform: translateY(-2px);
+  }
+}
 .service-card h3 { font-family: var(--serif); font-weight: 500; font-size: var(--text-lg); margin-bottom: var(--space-2); }
 .service-card h3:first-child { margin-top: 0; }
 .service-card p { font-size: var(--text-sm); color: var(--brown-soft); line-height: var(--lh-brod); }
@@ -512,7 +522,7 @@ button:disabled { opacity: .6; cursor: not-allowed; }
     transition-duration: 0.001ms !important;
   }
   .reveal, .js .reveal { opacity: 1 !important; transform: none !important; }
-  .btn:hover, .link-all:hover, .quick-info-row:hover { transform: none; }
+  .btn:hover, .link-all:hover, .quick-info-row:hover, .service-card:hover { transform: none; }
   .hero-photo { animation: none !important; transform: scale(1.07); }
   .rating-stars .stars-fyll { transition: none !important; }
 }
