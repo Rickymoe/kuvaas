@@ -120,6 +120,13 @@ img { max-width: 100%; display: block; }
   position: sticky; top: 0; z-index: 50;
   background: var(--cream-glass); backdrop-filter: blur(14px);
   border-bottom: 1px solid var(--line);
+  transition: background .3s ease, box-shadow .3s ease, border-color .3s ease;
+}
+/* "Setter seg" når man har scrollet forbi toppen (js legger på .nav--scrolled) */
+.nav--scrolled {
+  background: var(--cream);
+  border-bottom-color: transparent;
+  box-shadow: 0 3px 18px rgba(74, 59, 42, 0.1);
 }
 .nav .wrap { display: flex; align-items: center; justify-content: space-between; height: 80px; gap: var(--space-5); }
 .nav-logo img { height: 40px; }
@@ -198,6 +205,14 @@ img { max-width: 100%; display: block; }
   height: 100%;
   object-fit: cover;
   z-index: 0;
+  /* Rolig Ken Burns -- bildet "lever" uten å distrahere. Starter på 1.06 så
+     kantene aldri viser seg under panoreringen. Klippes av .hero-panel. */
+  transform: scale(1.06);
+  animation: hero-drift 34s ease-in-out infinite alternate;
+}
+@keyframes hero-drift {
+  from { transform: scale(1.06) translate3d(0, 0, 0); }
+  to   { transform: scale(1.13) translate3d(-1.6%, -1.2%, 0); }
 }
 .hero-panel::after {
   content: "";
@@ -237,7 +252,26 @@ img { max-width: 100%; display: block; }
   transition: opacity .2s;
 }
 .rating-badge:hover { opacity: .8; }
-.rating-stars { color: var(--gull); letter-spacing: 2px; font-size: var(--text-base); }
+
+/* Stjernene: en dempet «tom» rad + en gull rad som klippes fra venstre.
+   .rating-badge.talt -> js har satt --fyll og teller opp tallene. */
+.rating-stars {
+  position: relative;
+  display: inline-block;
+  letter-spacing: 2px;
+  font-size: var(--text-base);
+  line-height: 1;
+}
+.rating-stars .stars-tom { color: rgba(255, 255, 255, 0.35); }
+.rating-stars .stars-fyll {
+  position: absolute;
+  left: 0; top: 0; bottom: 0;   /* ikke inset/right -> width er entydig */
+  overflow: hidden;
+  white-space: nowrap;
+  color: var(--gull);
+  width: var(--fyll, 0%);
+  transition: width .9s cubic-bezier(.2, .7, .2, 1);
+}
 
 .page-hero { padding-top: var(--space-8); padding-bottom: var(--space-7); position: relative; }
 .page-hero h1 { font-family: var(--serif); font-style: italic; font-weight: 500; font-size: var(--text-2xl); line-height: var(--lh-tett); color: var(--brown); }
@@ -463,4 +497,6 @@ button:disabled { opacity: .6; cursor: not-allowed; }
   }
   .reveal, .js .reveal { opacity: 1 !important; transform: none !important; }
   .btn:hover, .link-all:hover { transform: none; }
+  .hero-photo { animation: none !important; transform: scale(1.06); }
+  .rating-stars .stars-fyll { transition: none !important; }
 }

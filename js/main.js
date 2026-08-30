@@ -4,8 +4,73 @@ document.addEventListener('DOMContentLoaded', async () => {
     loadPartial('partials/footer.html', 'site-footer')
   ]);
   initNav();
+  initNavScroll();
   initReveal();
+  initRating();
 });
+
+// Nav "setter seg" (solid bakgrunn + skygge) når man har scrollet forbi toppen.
+function initNavScroll() {
+  const nav = document.querySelector('.nav');
+  if (!nav) return;
+  let ticking = false;
+  const update = () => {
+    nav.classList.toggle('nav--scrolled', window.scrollY > 64);
+    ticking = false;
+  };
+  update();
+  window.addEventListener('scroll', () => {
+    if (!ticking) { requestAnimationFrame(update); ticking = true; }
+  }, { passive: true });
+}
+
+// Rating-badgen: stjernene fylles og tallene teller opp når badgen scrolles inn.
+function initRating() {
+  const badge = document.querySelector('.rating-badge');
+  const valEl = document.getElementById('rating-value');
+  const cntEl = document.getElementById('rating-count');
+  if (!badge || !valEl || !cntEl) return;
+
+  const rating = parseFloat(valEl.textContent.replace(',', '.')) || 0;
+  const count = parseInt(cntEl.textContent.replace(/\D/g, ''), 10) || 0;
+  badge.setAttribute('aria-label',
+    `Google-vurdering: ${valEl.textContent} av ${cntEl.textContent} anmeldelser`);
+
+  const fyll = Math.max(0, Math.min(100, rating / 5 * 100));
+  const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  const settFinal = () => {
+    const stars = badge.querySelector('.rating-stars');
+    if (stars) stars.style.setProperty('--fyll', fyll + '%');
+    valEl.textContent = rating.toLocaleString('nb-NO', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+    cntEl.textContent = String(count);
+  };
+
+  if (reduced || !('IntersectionObserver' in window)) { settFinal(); return; }
+
+  valEl.textContent = '0,0';
+  cntEl.textContent = '0';
+
+  const animer = () => {
+    const stars = badge.querySelector('.rating-stars');
+    if (stars) stars.style.setProperty('--fyll', fyll + '%');   // CSS-transition gjør resten
+    const dur = 1100, t0 = performance.now();
+    const step = (now) => {
+      const p = Math.min(1, (now - t0) / dur);
+      const eased = 1 - Math.pow(1 - p, 3);
+      valEl.textContent = (rating * eased).toLocaleString('nb-NO', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+      cntEl.textContent = String(Math.round(count * eased));
+      if (p < 1) requestAnimationFrame(step);
+      else settFinal();
+    };
+    requestAnimationFrame(step);
+  };
+
+  const io = new IntersectionObserver((entries) => {
+    if (entries.some(e => e.isIntersecting)) { animer(); io.disconnect(); }
+  }, { threshold: 0.35 });
+  io.observe(badge);
+}
 
 async function loadPartial(url, targetId) {
   const target = document.getElementById(targetId);
