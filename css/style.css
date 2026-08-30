@@ -216,12 +216,16 @@ img { max-width: 100%; display: block; }
 .quick-info p a:hover { color: var(--terracotta-tekst); }
 @media (max-width: 760px) { .quick-info-row { grid-template-columns: 1fr; } }
 
-/* ===== Service row (forside) ===== */
-.service-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-5); }
+/* ===== Service / behandling-kort =====
+   align-items: start -- kortene får sin egen høyde. Behandlingene er ikke en
+   sekvens, så et langt kort skal ikke strekke nabokortene med tomme bunner
+   (issue #2). Nummereringen (01/02/...) er fjernet av samme grunn. */
+.service-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-5); align-items: start; }
 .service-card { background: var(--cream-deep); border: 1px solid var(--line); border-radius: 16px; padding: var(--space-6); }
-.service-card .num { font-family: var(--serif); font-style: italic; color: var(--terracotta-tekst); font-size: var(--text-sm); margin-bottom: var(--space-3); }
 .service-card h3 { font-family: var(--serif); font-weight: 500; font-size: var(--text-lg); margin-bottom: var(--space-2); }
+.service-card h3:first-child { margin-top: 0; }
 .service-card p { font-size: var(--text-sm); color: var(--brown-soft); line-height: var(--lh-brod); }
+.service-card p + p { margin-top: var(--space-3); }
 @media (max-width: 860px) { .service-row { grid-template-columns: 1fr; } }
 
 /* ===== About/trust grid (forside) ===== */
