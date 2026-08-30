@@ -410,7 +410,9 @@ body[data-page="om-oss"] .about-photo { object-position: 50% 12%; }
 .price-row { display: flex; justify-content: space-between; gap: var(--space-4); background: var(--flate); padding: var(--space-4) var(--space-5); font-size: var(--text-md); transition: background-color .2s ease; }
 .price-row strong { color: var(--terracotta-tekst); white-space: nowrap; }
 @media (hover: hover) {
-  .price-row:hover { background: rgba(166, 101, 63, .07); }
+  /* Ugjennomsiktig -- ellers ser man gjennom raden til den graa --line-containeren
+     og treffer blir mudrete/moerkt i stedet for en lys, varm tint. */
+  .price-row:hover { background: #FBF4EF; }
 }
 .price-cat { margin-bottom: var(--space-8); }
 .price-cat h3 { font-family: var(--serif); font-weight: 500; font-size: var(--text-xl); margin-bottom: var(--space-3); color: var(--terracotta-tekst); }
