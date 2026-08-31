@@ -72,18 +72,43 @@ function initRating() {
   io.observe(badge);
 }
 
-async function loadPartial(url, targetId) {
+// Cacher header/footer i sessionStorage. Første sidevisning i en økt henter
+// og lagrer; alle senere navigasjoner injiserer synkront fra cache, så
+// headeren rekker ikke å blinke tomt før fetch-en fyller den. Cachen
+// revalideres i bakgrunnen (ny versjon vises ved neste navigasjon).
+// outerHTML (not innerHTML) so the placeholder div doesn't wrap the result —
+// a wrapper exactly the height of .nav leaves position:sticky with no room to
+// stick, so .nav must become a direct child of body.
+function loadPartial(url, targetId) {
   const target = document.getElementById(targetId);
-  if (!target) return;
-  try {
-    const res = await fetch(url);
-    // outerHTML (not innerHTML) so the placeholder div doesn't wrap the
-    // result — a wrapper exactly the height of .nav leaves position:sticky
-    // with no room to stick, so .nav must become a direct child of body.
-    target.outerHTML = await res.text();
-  } catch (err) {
-    console.error('Kunne ikke laste ' + url, err);
+  if (!target) return Promise.resolve();
+  const key = 'kuvaas-partial:' + url;
+
+  let cached = null;
+  try { cached = sessionStorage.getItem(key); } catch (e) {}
+
+  const fetchAndStore = () => fetch(url)
+    .then(res => {
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      return res.text();
+    })
+    .then(html => {
+      try { sessionStorage.setItem(key, html); } catch (e) {}
+      return html;
+    });
+
+  if (cached) {
+    target.outerHTML = cached;
+    fetchAndStore().catch(() => {});
+    return Promise.resolve();
   }
+
+  return fetchAndStore()
+    .then(html => {
+      const t = document.getElementById(targetId);
+      if (t) t.outerHTML = html;
+    })
+    .catch(err => console.error('Kunne ikke laste ' + url, err));
 }
 
 function initNav() {
