@@ -218,26 +218,33 @@ img { max-width: 100%; display: block; }
 }
 .carousel-stage.is-ready .hero-fallback { opacity: 0; }
 
+/* DOM-scrim: kun for fallback (ingen JS/WebGL). Når karusellen er klar, tar
+   den faste WebGL-skjermen over gradienten og denne fades ut. */
 .hero-scrim {
   position: absolute;
   inset: 0;
   z-index: 2;
   pointer-events: none;
+  transition: opacity .5s ease .15s;
   background: linear-gradient(100deg,
     rgba(74,59,42,.82) 0%,
     rgba(74,59,42,.48) 24%,
     rgba(74,59,42,.14) 46%,
     rgba(74,59,42,0) 62%);
 }
+.carousel-stage.is-ready .hero-scrim { opacity: 0; }
+/* Teksten sitter på den faste skjermen -- venstre-tredjedelen, der WebGL-
+   skjermens gradient er mørkest. left ~ skjermens venstre kant (skjermen er
+   sentrert og ~71% av bredden -> kanten ligger rundt 15vw). */
 .hero-content {
   position: absolute;
   z-index: 3;
-  left: clamp(20px, 6vw, 96px);
+  left: max(20px, 16vw);
   top: 50%;
   transform: translateY(-50%);
-  max-width: 520px;
+  max-width: min(34rem, 58vw);
 }
-/* Litt skygge bak teksten -- lar scrimen være lettere uten å ofre lesbarhet. */
+/* Litt skygge bak teksten -- lar gradienten være lettere uten å ofre lesbarhet. */
 .hero-content .eyebrow,
 .hero-content h1,
 .hero-content .lead { text-shadow: 0 1px 16px rgba(43,32,22,.55); }
@@ -286,7 +293,7 @@ img { max-width: 100%; display: block; }
 }
 @media (prefers-reduced-motion: reduce) {
   .carousel-nav { transition: none; }
-  .hero-fallback { transition: none; }
+  .hero-fallback, .hero-scrim { transition: none; }
 }
 
 .hero .eyebrow { color: var(--cream-deep); }
