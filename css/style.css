@@ -182,65 +182,111 @@ img { max-width: 100%; display: block; }
   box-shadow: var(--skygge-md);
 }
 
-/* ===== Hero =====
-   Innrammet bildepanel (issue #9, alt. 2) -- ikke fullbredde. Panelet ligger
-   i sidemargen som resten av siden, teksten venstrestilt inni det over den
-   mørke venstresonen av gradienten (100deg). */
-.hero { padding-block: var(--space-6); }
-.hero-panel {
+/* ===== Hero -- buet 3D-bildekarusell (js/carousel.js) =====
+   Fullbreddes cream-scene med et buet fotopanel som "leser flatt" foran og
+   krummer bort til sidene. Teksten ligger venstrestilt oppå, over en mørk
+   scrim (samme 100deg-vinkel som den gamle hero-gradienten). .hero-fallback
+   er statisk <img> som vises til carousel.js melder .is-ready -- og blir
+   stående ved manglende JS/WebGL. */
+.hero { padding-block: 0; }
+
+.carousel-stage {
   position: relative;
-  max-width: 1180px;
-  margin-inline: auto;
-  min-height: 560px;
-  display: flex;
-  align-items: center;
-  padding: clamp(2.5rem, 5vw, 5rem);
-  border-radius: 24px;
+  width: 100%;
+  height: min(74vh, 620px);
+  min-height: 460px;
   overflow: hidden;
-  box-shadow: 0 20px 48px -20px rgba(74,59,42,.32);
+  touch-action: pan-y;   /* horisontal sveip -> karusell, vertikal -> scroll */
 }
-/* Ekte <img> (ikke CSS background) -- gir alt-tekst, lazy/priority-hint og SEO.
-   Gradienten ligger som ::after oppå bildet, teksten over igjen. */
-.hero-photo {
+#carousel-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  z-index: 1;
+  cursor: grab;
+}
+.hero-fallback {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
   object-fit: cover;
   z-index: 0;
-  /* Rolig Ken Burns -- bildet "lever" uten å distrahere. Starter på 1.08 så
-     kantene aldri viser seg under panoreringen (overheng > pan). Klippes av
-     .hero-panel overflow:hidden. */
-  transform: scale(1.07);
-  animation: hero-drift 22s ease-in-out infinite alternate;
+  transition: opacity .5s ease .15s;
 }
-@keyframes hero-drift {
-  from { transform: scale(1.07) translate3d(0, 0, 0); }
-  to   { transform: scale(1.24) translate3d(-5%, -3.5%, 0); }
-}
-.hero-panel::after {
-  content: "";
+.carousel-stage.is-ready .hero-fallback { opacity: 0; }
+
+.hero-scrim {
   position: absolute;
   inset: 0;
-  z-index: 1;
+  z-index: 2;
+  pointer-events: none;
   background: linear-gradient(100deg,
-    rgba(74,59,42,.93) 0%,
-    rgba(74,59,42,.74) 38%,
-    rgba(74,59,42,.34) 62%,
-    rgba(74,59,42,.10) 85%);
+    rgba(74,59,42,.82) 0%,
+    rgba(74,59,42,.48) 24%,
+    rgba(74,59,42,.14) 46%,
+    rgba(74,59,42,0) 62%);
 }
-.hero-content { position: relative; z-index: 2; max-width: 540px; }
+.hero-content {
+  position: absolute;
+  z-index: 3;
+  left: clamp(20px, 6vw, 96px);
+  top: 50%;
+  transform: translateY(-50%);
+  max-width: 520px;
+}
+/* Litt skygge bak teksten -- lar scrimen være lettere uten å ofre lesbarhet. */
+.hero-content .eyebrow,
+.hero-content h1,
+.hero-content .lead { text-shadow: 0 1px 16px rgba(43,32,22,.55); }
 
-@media (max-width: 1240px) { .hero-panel { margin-inline: 32px; } }
+/* Pil-knapper (portet fra X-serien) */
+.carousel-nav {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--hvit-kant);
+  border-radius: 50%;
+  background: var(--cream-glass);
+  backdrop-filter: blur(6px);
+  color: var(--terracotta-dark);
+  cursor: pointer;
+  box-shadow: var(--skygge-sm);
+  transition: background .18s ease, transform .18s ease;
+  z-index: 4;
+}
+.carousel-nav svg { width: 20px; height: 20px; }
+.carousel-nav--prev { left: clamp(12px, 3vw, 28px); }
+.carousel-nav--next { right: clamp(12px, 3vw, 28px); }
+.carousel-nav:hover { background: var(--cream); transform: translateY(-50%) scale(1.06); }
+.carousel-nav:active { transform: translateY(-50%) scale(0.96); }
+
 @media (max-width: 640px) {
-  .hero { padding-block: 0; }
-  .hero-panel {
-    margin-inline: 0;
-    border-radius: 0;
-    padding: 5rem 20px 3rem;
-    min-height: 440px;
-    box-shadow: none;
+  .carousel-stage { height: 84vh; min-height: 520px; }
+  .hero-scrim {
+    background: linear-gradient(178deg,
+      rgba(74,59,42,.34) 0%,
+      rgba(74,59,42,.12) 34%,
+      rgba(74,59,42,.52) 66%,
+      rgba(74,59,42,.86) 100%);
   }
+  .hero-content {
+    left: 20px; right: 20px;
+    top: auto; bottom: clamp(28px, 9vw, 60px);
+    transform: none;
+    max-width: none;
+  }
+  .carousel-nav { width: 38px; height: 38px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .carousel-nav { transition: none; }
+  .hero-fallback { transition: none; }
 }
 
 .hero .eyebrow { color: var(--cream-deep); }
@@ -531,6 +577,5 @@ button:disabled { opacity: .6; cursor: not-allowed; }
   }
   .reveal, .js .reveal { opacity: 1 !important; transform: none !important; }
   .btn:hover, .link-all:hover, .quick-info-row:hover, .service-card:hover { transform: none; }
-  .hero-photo { animation: none !important; transform: scale(1.07); }
   .rating-stars .stars-fyll { transition: none !important; }
 }

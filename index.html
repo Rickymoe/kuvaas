@@ -18,9 +18,13 @@
 
 <div id="site-header"></div>
 
-<section class="hero">
-  <div class="hero-panel">
-    <img class="hero-photo" src="Bilder/havn-hero.jpg" alt="Småbåthavna i Holmestrand sentrum en solfylt høstdag" fetchpriority="high" width="2560" height="1213" />
+<section class="hero" aria-label="Bildekarusell">
+  <div id="carousel-stage" class="carousel-stage">
+    <canvas id="carousel-canvas" aria-hidden="true"></canvas>
+    <!-- Statisk fallback: vises til carousel.js legger .is-ready på stagen,
+         og blir stående ved manglende JS/WebGL (beholder alt-tekst + SEO). -->
+    <img class="hero-fallback" src="Bilder/havn-hero.jpg" alt="Småbåthavna i Holmestrand sentrum en solfylt høstdag" fetchpriority="high" width="2560" height="1213" />
+    <div class="hero-scrim" aria-hidden="true"></div>
     <div class="hero-content">
       <div class="eyebrow reveal">Tannklinikken Jack Kuvaas AS</div>
       <h1 class="reveal" style="transition-delay:.08s">Din tannlege på bryggen i Holmestrand</h1>
@@ -34,6 +38,12 @@
         <span aria-hidden="true"><span id="rating-value">4,7</span> av <span id="rating-count">61</span> anmeldelser på Google</span>
       </a>
     </div>
+    <button type="button" class="carousel-nav carousel-nav--prev" aria-label="Forrige bilde">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+    <button type="button" class="carousel-nav carousel-nav--next" aria-label="Neste bilde">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
   </div>
 </section>
 
@@ -116,6 +126,14 @@
 </section>
 
 <div id="site-footer"></div>
+
+<script type="importmap">
+{ "imports": { "three": "https://unpkg.com/three@0.165.0/build/three.module.js" } }
+</script>
+<script type="module">
+  import { initCarousel } from './js/carousel.js';
+  initCarousel(document.getElementById('carousel-canvas'));
+</script>
 <script src="js/main.js"></script>
 <!-- Cloudflare Web Analytics --><script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "3b2830d8c1b74ed68dee031783103adc"}'></script><!-- End Cloudflare Web Analytics -->
 </body>
