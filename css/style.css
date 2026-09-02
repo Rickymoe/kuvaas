@@ -193,8 +193,7 @@ img { max-width: 100%; display: block; }
 .carousel-stage {
   position: relative;
   width: 100%;
-  height: min(74vh, 620px);
-  min-height: 460px;
+  height: clamp(430px, 44vw, 580px);
   overflow: hidden;
   touch-action: pan-y;   /* horisontal sveip -> karusell, vertikal -> scroll */
 }

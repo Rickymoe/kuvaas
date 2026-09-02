@@ -19,9 +19,9 @@ const CONFIG = {
   slotArc: Math.PI / 2,      // 4 slots, 90 grader mellom hvert bildesenter
   panelArc: THREE.MathUtils.degToRad(60), // hvert bilde spenner 60 grader -> 30 grader luft i skjøten
   aspect: 2560 / 1213,       // kildebildets bredde/høyde
-  heroWidthFrac: 0.62,       // landskap: front-bildet fyller så mye av lerretsbredden
+  heroWidthFrac: 0.74,       // landskap: front-bildet fyller så mye av lerretsbredden
   heroWidthFracPortrait: 1.35, // portrett: la heroen blø litt ut i bredden -> mer høyde, senter-beskåret
-  heroHeightFrac: 0.82,      // heroen skal aldri bli høyere enn så mye av lerretet
+  heroHeightFrac: 0.94,      // heroen skal aldri bli høyere enn så mye av lerretet
   fov: 35,
   cornerRadius: 0.07,        // avrundede hjørner, som andel av panelhøyden
   bg: 0xfdf6ec,              // = --cream (tåke + clear color)
@@ -29,8 +29,8 @@ const CONFIG = {
   // Fast "skjerm" foran trommelen -- roterer IKKE. Bærer den mørke gradienten
   // og rammer hero-bildet; HTML-teksten ligger oppå. Trommelen blar bak den,
   // og B1/B3 stikker ut til sidene for skjermen.
-  screenWidthFrac: 1.14,     // skjermbredde som andel av trommelens front-korde
-  screenHeightFrac: 1.30,    // skjermhøyde som andel av panelhøyden
+  screenWidthFrac: 0.97,     // skjermen litt smalere enn front-panelet -> bildet blør ut i kanten
+  screenHeightFrac: 0.93,    // ...og litt lavere -> bildet fyller rammen topp til bunn
   screenFlatten: 2.4,        // > 1 = flatere bue enn trommelen (større radius)
   screenGap: 0.14,           // hvor langt (world units) foran trommel-fronten
   screenCornerPx: 40,        // hjørneradius i skjerm-teksturens piksler
@@ -320,10 +320,10 @@ function makeScreenTexture(cornerPx) {
   g.roundRect(2, 2, w - 4, h - 4, cornerPx)
   g.clip()
   const grad = g.createLinearGradient(0, 0, w, 0)
-  grad.addColorStop(0.00, 'rgba(38,28,19,0.90)')
-  grad.addColorStop(0.34, 'rgba(38,28,19,0.60)')
-  grad.addColorStop(0.58, 'rgba(38,28,19,0.16)')
-  grad.addColorStop(0.76, 'rgba(38,28,19,0)')
+  grad.addColorStop(0.00, 'rgba(38,28,19,0.92)')
+  grad.addColorStop(0.40, 'rgba(38,28,19,0.66)')
+  grad.addColorStop(0.66, 'rgba(38,28,19,0.20)')
+  grad.addColorStop(0.84, 'rgba(38,28,19,0)')
   g.fillStyle = grad
   g.fillRect(0, 0, w, h)
   g.restore()
