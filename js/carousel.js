@@ -1,23 +1,26 @@
-// Kuvaas -- buet 3D hero-karusell (portet fra X-serien / X6).
+// Kuvaas -- hero-karusell.
 //
-// Systemet: fotavtrykket er en RUND løkke. Kameraet står stille, i vater,
-// rett på løkkas front. Front-slotten leser nesten flatt -- det er HERO-bildet.
-// Slottene til venstre og høyre er samme sylinderflate som krummer bakover; vi
-// ser bare stripen nærmest heroen, resten forsvinner i perspektiv + tåke.
-// Løkka er full -- 4 bilder, ett i hver slot -- så det aldri er en glipe når
-// man blar. Man blar ved å rotere hele løkka om Y-aksen.
+// DESKTOP: buet 3D-løkke (Three.js). Fotavtrykket er en rund løkke; kameraet
+// står stille rett på fronten. Front-slotten leser nesten flatt = HERO-bildet,
+// sidepanelene krummer bakover. Man blar ved å rotere løkka om Y-aksen.
 //
-// Feiler WebGL (eller JS), gjør initCarousel ingenting -- da blir .hero-poster
-// (statisk <img> + scrim + tekst) stående som en helt vanlig hero.
+// MOBIL (<= 640px): en helt vanlig scroll-snap-karusell -- nettleseren gjør
+// sveip + fart + snapp nativt. Three.js lastes ikke i det hele tatt her.
 //
-// Alt er parametrisert i CONFIG. Bytt ut bildene ved å redigere SLOTS.
+// Delt: bildetekstene (én per slot, fades ut/inn ved bla) og prikkene.
+//
+// Feiler WebGL/JS: .hero-poster (uskarpt stillbilde + tekst) blir stående som
+// en helt vanlig hero. Alt er parametrisert i CONFIG. Bytt bildene i SLOTS.
 
-import * as THREE from 'three'
+let THREE   // lastes dynamisk kun på desktop
+
+const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v))
+const DEG = Math.PI / 180
 
 const CONFIG = {
   radius: 3.9,               // løkkas radius
   slotArc: Math.PI / 2,      // 4 slots, 90 grader mellom hvert bildesenter
-  panelArc: THREE.MathUtils.degToRad(38), // hvert bilde spenner 38 grader -> fronten leser flatt, sidene fortsatt synlige
+  panelArc: 38 * DEG,        // hvert bilde spenner 38 grader -> fronten leser flatt
   aspect: 2560 / 1213,       // kildebildets bredde/høyde
   heroMaxWidthPx: 1120,      // "fit": panelet aldri bredere enn dette (som det gamle kortet)
   heroSideMarginPx: 48,      // ...og aldri nærmere lerretskanten enn dette hver side
@@ -27,28 +30,26 @@ const CONFIG = {
   bg: 0xfdf6ec,              // = --cream (tåke + clear color)
 
   // Mørkning bakt inn i HVERT panel-materiale (shader) -- gradienten ER bildet,
-  // så den ligger alltid presist på det uansett bue/skjermbredde. Venstretung
-  // (for desktop-teksten) + ekstra mot bunn (for mobil-teksten nede).
-  shadeColor: [0.09, 0.065, 0.045],  // mørkningsfarge (nær brun-svart)
-  shadeLeftEnd: 0.92,       // uv.x der venstre-mørkningen når null
-  shadeLeftFalloff: 1.15,   // eksponent på avtaket (< 1 = holder mørk lenger)
-  shadeBottomBoost: 0.5,    // ekstra mørkning mot bunnen (bl.a. for mobil-tekst nede)
-  shadeMax: 0.90,           // tak på total mørkning
+  // så den ligger alltid presist på det. Venstretung + ekstra mot bunn.
+  shadeColor: [0.09, 0.065, 0.045],
+  shadeLeftEnd: 0.92,
+  shadeLeftFalloff: 1.15,
+  shadeBottomBoost: 0.5,
+  shadeMax: 0.90,
 
-  swipePx: 45,               // dra så langt (px) for å bla ett steg
-  dragGive: 0.0018,          // rad per px "etter" mens man drar under terskelen
-  dragGiveMax: 0.06,         // ...men aldri mer enn dette (~3,5°) -- holder glipa lukket
-  ease: 0.09,                // hvor raskt render-vinkelen tar igjen mål-vinkelen
-  captionOutMs: 820,         // ms teksten er ute før den byttes + fades inn -- >= CSS-ens
-                             // fade-ut (.is-turning transition, .7s) + en liten hold
+  swipePx: 45,               // desktop: dra så langt for å bla ett steg
+  dragGive: 0.0018,
+  dragGiveMax: 0.06,
+  ease: 0.09,
+  captionOutMs: 820,         // ms teksten er ute før den byttes + fades inn
+  mobileQuery: '(max-width: 640px)',
 }
 
-// Slot-oppsett. angle = senter-theta på sylinderen (0 = front, mot kamera).
-// caption = teksten som fades inn når slotten lander foran. Slot 0 sin caption
-// leses fra .hero-content i HTML (SSR-en / no-JS-visningen), så den er null her.
+// Slot-oppsett. caption = teksten som fades inn når slotten er i fokus. Slot 0
+// sin caption leses fra .hero-content i HTML (SSR / no-JS).
 // TODO (Ricky): bytt bildene til ekte brede foto + skriv ekte captions for 1-3.
 const SLOTS = [
-  { angle: 0,            image: 'Bilder/havn-hero.jpg', caption: null }, // front / HERO (tekst fra HTML)
+  { angle: 0,            image: 'Bilder/havn-hero.jpg', caption: null },
   { angle: Math.PI / 2,  image: 'Bilder/havn-hero.jpg', caption: {
       eyebrow: 'Erfarne tannleger',
       h1: 'Skånsom behandling i hvert steg',
@@ -63,159 +64,14 @@ const SLOTS = [
       lead: 'Alltid med et tydelig kostnadsoverslag før vi starter.' } },
 ]
 
-export function initCarousel(canvas) {
+export async function initCarousel(canvas) {
   if (!canvas) return
   const stage = canvas.parentElement
   const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches
+  const isMobile = matchMedia(CONFIG.mobileQuery).matches
+  const filled = SLOTS.filter(s => s.image)
 
-  // ---- Panelmål ----------------------------------------------------------
-  // Buelengden på ett panel styrer bredden; høyden følger av bildeforholdet.
-  const arcLen = CONFIG.radius * CONFIG.panelArc
-  const panelH = arcLen / CONFIG.aspect
-  // Front-panelets synlige bredde (korden mellom buens endepunkter).
-  const chord = 2 * CONFIG.radius * Math.sin(CONFIG.panelArc / 2)
-
-  // ---- Scene / kamera / renderer ---------------------------------------
-  const scene = new THREE.Scene()
-  // Tåka biter inn i sidepanelenes bortre halvdel -> perspektiv-splayen løses
-  // opp i cream i stedet for å stå og skjære, og løkka får dybde. near/far
-  // settes dynamisk i fitCamera (forankret til kamera-avstanden, ikke origo),
-  // så heroen alltid ligger foran tåka uansett skjermformat.
-  scene.fog = new THREE.Fog(CONFIG.bg, 1, 10)
-
-  const camera = new THREE.PerspectiveCamera(CONFIG.fov, 1, 0.1, 100)
-
-  let renderer
-  try {
-    renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true })
-  } catch (e) {
-    console.warn('Hero-karusell: WebGL utilgjengelig, viser posteren videre.', e)
-    stage.classList.add('no-webgl')   // -> CSS viser poster-<img> (ekte foto-hero)
-    return
-  }
-  renderer.setClearColor(CONFIG.bg, 0)
-  const maxAniso = renderer.capabilities.getMaxAnisotropy()
-
-  // ---- Løkka -----------------------------------------------------------
-  const loop = new THREE.Group()
-  scene.add(loop)
-
-  // Hjørneradius uttrykt i andel av panelhøyden -> andel av alpha-lerretets høyde.
-  const alphaMap = makeRoundedRectAlpha(CONFIG.cornerRadius)
-  const loader = new THREE.TextureLoader()
-  const panels = []
-
-  for (const slot of SLOTS) {
-    if (!slot.image) continue
-
-    const geo = new THREE.CylinderGeometry(
-      CONFIG.radius, CONFIG.radius, panelH,
-      64, 1, true,
-      slot.angle - CONFIG.panelArc / 2, CONFIG.panelArc
-    )
-
-    const tex = loader.load(slot.image, () => render())
-    tex.colorSpace = THREE.SRGBColorSpace
-    tex.anisotropy = maxAniso
-
-    const mat = new THREE.MeshBasicMaterial({
-      map: tex,
-      alphaMap,
-      transparent: true,
-      side: THREE.DoubleSide,
-      toneMapped: false,
-    })
-    applyPanelShade(mat)
-
-    const mesh = new THREE.Mesh(geo, mat)
-    loop.add(mesh)
-    panels.push(mesh)
-  }
-
-  // Myk kontaktskygge under løkka -- en flat ellipse med radial toning.
-  const shadow = new THREE.Mesh(
-    new THREE.PlaneGeometry(chord * 1.5, CONFIG.radius * 1.7),
-    new THREE.MeshBasicMaterial({
-      map: makeRadialShadow(), transparent: true, opacity: 0.22,
-      depthWrite: false, color: 0x4a3b2a, toneMapped: false,
-    })
-  )
-  shadow.rotation.x = -Math.PI / 2
-  shadow.position.y = -panelH / 2 - 0.05
-  shadow.position.z = CONFIG.radius * 0.15
-  scene.add(shadow)
-
-  // ---- Tekst-anker: projiser front-panelets kanter ------------------
-  // Gradienten er bakt inn i bildet (applyPanelShade), så vi trenger ikke
-  // matche noen ramme. Vi projiserer front-panelets venstre/høyre kant (rene
-  // loddrette linjer) + topp/bunn ved hjørne-nivået, så HTML-teksten kan
-  // ankres til den EKTE geometrien: --panel-left/-w/-top/-h.
-  const _v = new THREE.Vector3()
-  function updateTextAnchor() {
-    const w = stage.clientWidth, h = stage.clientHeight
-    if (!w || !h) return
-    camera.updateMatrixWorld()
-    const halfArc = CONFIG.panelArc / 2
-    const halfH = panelH / 2
-    const px = (x, y, z) => { _v.set(x, y, z).project(camera); return [(_v.x * 0.5 + 0.5) * w, (-_v.y * 0.5 + 0.5) * h] }
-    const [leftPx] = px(CONFIG.radius * Math.sin(-halfArc), 0, CONFIG.radius * Math.cos(-halfArc))
-    const [rightPx] = px(CONFIG.radius * Math.sin(halfArc), 0, CONFIG.radius * Math.cos(halfArc))
-    // Topp/bunn ved hjørnet (theta = -halfArc) -- der panelet er "lavest" oppe
-    // og "høyest" nede, dvs. den trygge indre boksen for teksten.
-    const cx = CONFIG.radius * Math.sin(-halfArc), cz = CONFIG.radius * Math.cos(-halfArc)
-    const [, topPy] = px(cx, halfH, cz)
-    const [, botPy] = px(cx, -halfH, cz)
-    stage.style.setProperty('--panel-left', leftPx + 'px')
-    stage.style.setProperty('--panel-w', (rightPx - leftPx) + 'px')
-    stage.style.setProperty('--panel-top', topPy + 'px')
-    stage.style.setProperty('--panel-h', (botPy - topPy) + 'px')
-  }
-
-  // ---- Kamera-avstand ------------------------------------------------
-  // To rammer regnes ut, og vi tar den som gir STØRST panel:
-  //  - "fit":  panel = min(maks-px, viewport - margin) bredt (som det gamle
-  //            hero-kortet -> teksten med fast bredde skalerer identisk)
-  //  - "fill": panel = heroHeightFrac av stage-høyden (blør ut i bredden,
-  //            senter-beskåret)
-  // På brede skjermer vinner fit; på smale (og portrett) blir fit-panelet for
-  // lavt for teksten, og fill vinner -> panelet dekker stagen vertikalt.
-  function fitCamera(viewportAspect, stageW) {
-    const vFov = THREE.MathUtils.degToRad(CONFIG.fov)
-    const hFov = 2 * Math.atan(Math.tan(vFov / 2) * viewportAspect)
-    const frontZ = CONFIG.radius * Math.cos(CONFIG.panelArc / 2)
-
-    const wFrac = Math.min(CONFIG.heroMaxWidthPx, stageW - CONFIG.heroSideMarginPx) / stageW
-    const distFit = ((chord / 2) / wFrac) / Math.tan(hFov / 2)
-    const distFill = ((panelH / 2) / CONFIG.heroHeightFrac) / Math.tan(vFov / 2)
-    // Mindre dist = kamera nærmere = større panel. Vi vil ha det største.
-    const dist = viewportAspect >= 1 ? Math.min(distFit, distFill) : distFill
-
-    const camZ = frontZ + dist
-    camera.position.set(0, 0, camZ)
-    camera.lookAt(0, 0, 0)
-
-    // Heroens fremste punkt ligger i z = radius (avstand camZ - radius).
-    // near litt foran det, far like bak løkkas senter.
-    scene.fog.near = camZ - CONFIG.radius * 0.40
-    scene.fog.far = camZ + CONFIG.radius * 0.95
-  }
-
-  // ---- Rotasjonstilstand ---------------------------------------------
-  let targetAngle = 0
-  // Ingen overrotasjon ved start: panelet skal ligge PRESIST oppå .hero-poster
-  // så krysstoningen poster -> canvas blir usynlig. Bare opacity fader inn.
-  let renderAngle = 0
-  let opacity = reduced ? 1 : 0
-  let idle = true
-  let ready = false
-  let readyArmed = false
-
-  const filledAngles = SLOTS.filter(s => s.image).map(s => -s.angle) // rotation.y som setter slotten front
-
-  // ---- Bildetekster (én per slot) ----------------------------------
-  // .hero-content i HTML er slot 0 sin tekst (SSR / no-JS). De andre kommer
-  // fra SLOTS[i].caption. Ved bla: teksten fades ut (CSS .is-turning), byttes
-  // mens den er usynlig, og fades inn med det nye bildet.
+  // ================= DELT: bildetekster + prikker =================
   const capEls = {
     eyebrow: stage.querySelector('.hero-content .eyebrow'),
     h1: stage.querySelector('.hero-content h1'),
@@ -228,8 +84,7 @@ export function initCarousel(canvas) {
   } : null))
   let currentSlot = 0
   let capTimer = null
-
-  const slotAt = (angle) => (((Math.round(-angle / CONFIG.slotArc)) % 4) + 4) % 4
+  let goToIndex = () => {}   // settes av desktop-/mobil-grenen
 
   function applyCaption(i) {
     const c = captions[i]
@@ -239,8 +94,7 @@ export function initCarousel(canvas) {
     if (capEls.lead && c.lead != null) capEls.lead.textContent = c.lead
   }
 
-  // ---- Prikker (bla-indikator) -------------------------------------
-  // Viser hvor mange bilder karusellen har + hvilket man er på. Tappbare.
+  // Prikker -- "det er flere bilder" + hvilket man er på. Tappbare.
   const dotWrap = document.createElement('div')
   dotWrap.className = 'carousel-dots'
   const dots = SLOTS.map((s, i) => {
@@ -249,11 +103,11 @@ export function initCarousel(canvas) {
     b.type = 'button'
     b.className = 'carousel-dot'
     b.setAttribute('aria-label', `Bilde ${i + 1}`)
-    b.addEventListener('click', () => goToSlot(i))
+    b.addEventListener('click', () => goToIndex(i))
     dotWrap.appendChild(b)
     return b
   })
-  if (dots.filter(Boolean).length > 1) stage.appendChild(dotWrap)
+  if (filled.length > 1) stage.appendChild(dotWrap)
 
   function setCurrentSlot(i) {
     currentSlot = i
@@ -267,26 +121,171 @@ export function initCarousel(canvas) {
   }
   setCurrentSlot(0)
 
-  // Kalles fra step()/sveip/prikk. Fade UT teksten nå (CSS .is-turning), så --
-  // etter en fast tid, uavhengig av rotasjonshastigheten -- bytt tekst + aktiv
-  // prikk mens teksten er usynlig, og fjern klassen så CSS fader den INN igjen.
-  function beginTurn() {
-    const dest = slotAt(targetAngle)
-    if (dest === currentSlot) return
+  // Fade teksten UT (CSS .is-turning), bytt den mens den er usynlig, fade INN.
+  function goCaption(dest) {
+    clearTimeout(capTimer)
+    if (dest === currentSlot) { stage.classList.remove('is-turning'); return }
     if (reduced) { setCurrentSlot(dest); return }
     stage.classList.add('is-turning')
-    clearTimeout(capTimer)
     capTimer = setTimeout(() => {
-      const d = slotAt(targetAngle)   // kan ha endret seg hvis man blar igjen
-      if (d !== currentSlot) setCurrentSlot(d)
+      setCurrentSlot(dest)
       stage.classList.remove('is-turning')
     }, CONFIG.captionOutMs)
   }
 
+  // ================= MOBIL: vanlig scroll-snap-karusell =================
+  if (isMobile) {
+    stage.classList.add('is-mobile', 'is-ready')
+
+    const strip = document.createElement('div')
+    strip.className = 'mobil-karusell'
+    const slides = filled.map((s, i) => {
+      const im = document.createElement('img')
+      im.src = s.image
+      im.alt = ''
+      im.loading = i === 0 ? 'eager' : 'lazy'
+      im.decoding = 'async'
+      strip.appendChild(im)
+      return im
+    })
+    const scrim = document.createElement('div')
+    scrim.className = 'mobil-scrim'
+    stage.appendChild(strip)
+    stage.appendChild(scrim)
+
+    goToIndex = (i) => slides[i] && slides[i].scrollIntoView({
+      behavior: 'smooth', inline: 'center', block: 'nearest',
+    })
+
+    // Hvilken slide er nærmest midten -> aktiv prikk + caption. Rett på scroll
+    // (ingen debounce -- goCaption ignorerer uendret slot), fungerer overalt.
+    let scrollIdx = 0
+    strip.addEventListener('scroll', () => {
+      const i = Math.max(0, Math.min(slides.length - 1,
+        Math.round(strip.scrollLeft / strip.clientWidth)))
+      if (i !== scrollIdx) { scrollIdx = i; goCaption(i) }
+    }, { passive: true })
+
+    if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') {
+      window.__cx = { mobile: true, goToIndex, slot: () => currentSlot }
+    }
+    return
+  }
+
+  // ================= DESKTOP: buet 3D-løkke (Three.js) =================
+  try {
+    THREE = await import('three')
+  } catch (e) {
+    console.warn('Hero-karusell: three.js lastet ikke, viser posteren videre.', e)
+    stage.classList.add('no-webgl')
+    return
+  }
+
+  const arcLen = CONFIG.radius * CONFIG.panelArc
+  const panelH = arcLen / CONFIG.aspect
+  const chord = 2 * CONFIG.radius * Math.sin(CONFIG.panelArc / 2)
+
+  const scene = new THREE.Scene()
+  scene.fog = new THREE.Fog(CONFIG.bg, 1, 10)
+  const camera = new THREE.PerspectiveCamera(CONFIG.fov, 1, 0.1, 100)
+
+  let renderer
+  try {
+    renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true })
+  } catch (e) {
+    console.warn('Hero-karusell: WebGL utilgjengelig, viser posteren videre.', e)
+    stage.classList.add('no-webgl')
+    return
+  }
+  renderer.setClearColor(CONFIG.bg, 0)
+  const maxAniso = renderer.capabilities.getMaxAnisotropy()
+
+  const loop = new THREE.Group()
+  scene.add(loop)
+
+  const alphaMap = makeRoundedRectAlpha(CONFIG.cornerRadius)
+  const loader = new THREE.TextureLoader()
+  const panels = []
+
+  for (const slot of SLOTS) {
+    if (!slot.image) continue
+    const geo = new THREE.CylinderGeometry(
+      CONFIG.radius, CONFIG.radius, panelH, 64, 1, true,
+      slot.angle - CONFIG.panelArc / 2, CONFIG.panelArc
+    )
+    const tex = loader.load(slot.image, () => render())
+    tex.colorSpace = THREE.SRGBColorSpace
+    tex.anisotropy = maxAniso
+    const mat = new THREE.MeshBasicMaterial({
+      map: tex, alphaMap, transparent: true,
+      side: THREE.DoubleSide, toneMapped: false,
+    })
+    applyPanelShade(mat)
+    const mesh = new THREE.Mesh(geo, mat)
+    loop.add(mesh)
+    panels.push(mesh)
+  }
+
+  const shadow = new THREE.Mesh(
+    new THREE.PlaneGeometry(chord * 1.5, CONFIG.radius * 1.7),
+    new THREE.MeshBasicMaterial({
+      map: makeRadialShadow(), transparent: true, opacity: 0.22,
+      depthWrite: false, color: 0x4a3b2a, toneMapped: false,
+    })
+  )
+  shadow.rotation.x = -Math.PI / 2
+  shadow.position.y = -panelH / 2 - 0.05
+  shadow.position.z = CONFIG.radius * 0.15
+  scene.add(shadow)
+
+  // Projiser front-panelets kanter -> CSS-variabler teksten ankres til.
+  const _v = new THREE.Vector3()
+  function updateTextAnchor() {
+    const w = stage.clientWidth, h = stage.clientHeight
+    if (!w || !h) return
+    camera.updateMatrixWorld()
+    const halfArc = CONFIG.panelArc / 2
+    const halfH = panelH / 2
+    const px = (x, y, z) => { _v.set(x, y, z).project(camera); return [(_v.x * 0.5 + 0.5) * w, (-_v.y * 0.5 + 0.5) * h] }
+    const [leftPx] = px(CONFIG.radius * Math.sin(-halfArc), 0, CONFIG.radius * Math.cos(-halfArc))
+    const [rightPx] = px(CONFIG.radius * Math.sin(halfArc), 0, CONFIG.radius * Math.cos(halfArc))
+    const cx = CONFIG.radius * Math.sin(-halfArc), cz = CONFIG.radius * Math.cos(-halfArc)
+    const [, topPy] = px(cx, halfH, cz)
+    const [, botPy] = px(cx, -halfH, cz)
+    stage.style.setProperty('--panel-left', leftPx + 'px')
+    stage.style.setProperty('--panel-w', (rightPx - leftPx) + 'px')
+    stage.style.setProperty('--panel-top', topPy + 'px')
+    stage.style.setProperty('--panel-h', (botPy - topPy) + 'px')
+  }
+
+  function fitCamera(viewportAspect, stageW) {
+    const vFov = CONFIG.fov * DEG
+    const hFov = 2 * Math.atan(Math.tan(vFov / 2) * viewportAspect)
+    const frontZ = CONFIG.radius * Math.cos(CONFIG.panelArc / 2)
+    const wFrac = Math.min(CONFIG.heroMaxWidthPx, stageW - CONFIG.heroSideMarginPx) / stageW
+    const distFit = ((chord / 2) / wFrac) / Math.tan(hFov / 2)
+    const distFill = ((panelH / 2) / CONFIG.heroHeightFrac) / Math.tan(vFov / 2)
+    const dist = viewportAspect >= 1 ? Math.min(distFit, distFill) : distFill
+    const camZ = frontZ + dist
+    camera.position.set(0, 0, camZ)
+    camera.lookAt(0, 0, 0)
+    scene.fog.near = camZ - CONFIG.radius * 0.40
+    scene.fog.far = camZ + CONFIG.radius * 0.95
+  }
+
+  let targetAngle = 0
+  let renderAngle = 0
+  let opacity = reduced ? 1 : 0
+  let idle = true
+  let ready = false
+  let readyArmed = false
+
+  const filledAngles = SLOTS.filter(s => s.image).map(s => -s.angle)
+  const slotAt = (angle) => (((Math.round(-angle / CONFIG.slotArc)) % 4) + 4) % 4
+
   function nearestFilled(a) {
     let best = a, bestD = Infinity
     for (const base of filledAngles) {
-      // nærmeste ekvivalent modulo 2pi
       const k = Math.round((a - base) / (2 * Math.PI))
       const cand = base + k * 2 * Math.PI
       const d = Math.abs(cand - a)
@@ -299,29 +298,23 @@ export function initCarousel(canvas) {
     let a = targetAngle
     for (let i = 0; i < 4; i++) {
       a += dir * CONFIG.slotArc
-      // land bare på en fylt slot
       const snapped = nearestFilled(a)
-      if (Math.abs(snapped - a) < 1e-3) { targetAngle = snapped; beginTurn(); wake(); return }
+      if (Math.abs(snapped - a) < 1e-3) { targetAngle = snapped; goCaption(slotAt(targetAngle)); wake(); return }
     }
-    targetAngle = nearestFilled(a); beginTurn(); wake()
+    targetAngle = nearestFilled(a); goCaption(slotAt(targetAngle)); wake()
   }
 
-  // Roter til en bestemt slot (prikk-klikk), korteste vei.
-  function goToSlot(i) {
+  goToIndex = function goToSlot(i) {
     if (i === currentSlot) return
     const base = -SLOTS[i].angle
     targetAngle = base + Math.round((targetAngle - base) / (2 * Math.PI)) * 2 * Math.PI
-    beginTurn()
+    goCaption(slotAt(targetAngle))
     wake()
   }
 
-  // ---- Interaksjon ---------------------------------------------------
-  // Sveip = ett steg (samme overgang som pilene). Fri rotasjon er droppet:
-  // panelene spenner smalere enn slot-avstanden, så en fri drag åpner en
-  // stor cream-glipe mellom bildene midt i svingen. Under terskelen gir
-  // løkka bare et lite "etter" som visuell kvittering, så snapper tilbake.
+  // Sveip = ett steg. Fri rotasjon droppet (åpner cream-glipe midt i svingen);
+  // under terskel bare et lite "etter" som snapper tilbake.
   let dragging = false, startX = 0, swiped = false
-
   canvas.addEventListener('pointerdown', e => {
     dragging = true; swiped = false; startX = e.clientX
     canvas.setPointerCapture(e.pointerId)
@@ -333,10 +326,9 @@ export function initCarousel(canvas) {
     if (Math.abs(dx) >= CONFIG.swipePx) {
       swiped = true
       canvas.style.cursor = 'grab'
-      step(dx < 0 ? -1 : 1)          // dra mot venstre = neste bilde
+      step(dx < 0 ? -1 : 1)
     } else {
-      renderAngle = targetAngle +
-        THREE.MathUtils.clamp(dx * CONFIG.dragGive, -CONFIG.dragGiveMax, CONFIG.dragGiveMax)
+      renderAngle = targetAngle + clamp(dx * CONFIG.dragGive, -CONFIG.dragGiveMax, CONFIG.dragGiveMax)
       wake()
     }
   })
@@ -344,7 +336,7 @@ export function initCarousel(canvas) {
     if (!dragging) return
     dragging = false
     canvas.style.cursor = 'grab'
-    if (!swiped) wake()              // targetAngle urørt -> ease snapper tilbake
+    if (!swiped) wake()
   }
   canvas.addEventListener('pointerup', endDrag)
   canvas.addEventListener('pointercancel', endDrag)
@@ -357,7 +349,6 @@ export function initCarousel(canvas) {
     else if (e.key === 'ArrowRight') step(-1)
   })
 
-  // ---- Render-løkke: kjører bare når noe faktisk beveger seg ---------
   let raf = null
   function wake() { idle = false; if (!raf) raf = requestAnimationFrame(tick) }
 
@@ -365,13 +356,9 @@ export function initCarousel(canvas) {
     raf = null
     renderAngle += (targetAngle - renderAngle) * CONFIG.ease
     if (opacity < 1) opacity = Math.min(1, opacity + 0.06)
-
     const settled = Math.abs(targetAngle - renderAngle) < 0.0004 && opacity >= 1
     if (settled) { renderAngle = targetAngle; idle = true }
-
     render()
-    // Slå av posteren FØRST når canvas har malt minst én
-    // full-opacity frame -- ellers blir det en kort udekket blink på hard reload.
     if (!ready && opacity >= 1) {
       if (readyArmed) { ready = true; stage.classList.add('is-ready') }
       else { readyArmed = true }
@@ -386,7 +373,6 @@ export function initCarousel(canvas) {
     renderer.render(scene, camera)
   }
 
-  // ---- Resize -------------------------------------------------------
   function resize() {
     const w = stage.clientWidth
     const h = stage.clientHeight
@@ -403,25 +389,18 @@ export function initCarousel(canvas) {
   resize()
   wake()
 
-  const api = {
-    step, resize,
-    _state: () => ({ targetAngle, renderAngle, opacity, idle, dragging, ready, panels: panels.length }),
-    _set: (o) => { if (o.opacity != null) opacity = o.opacity; if (o.targetAngle != null) targetAngle = o.targetAngle; if (o.renderAngle != null) renderAngle = o.renderAngle; render() },
-    _tick: () => tick(),
-    _render: () => render(),
-  }
-  // Dev-håndtak kun lokalt -- rAF strupes i automatiseringsfaner, så _tick/_render
-  // lar QA pumpe animasjonen manuelt. Aldri eksponert i produksjon.
   if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') {
-    window.__cx = api
+    window.__cx = {
+      step, resize, goToIndex,
+      _state: () => ({ targetAngle, renderAngle, opacity, idle, dragging, ready, currentSlot }),
+      _set: (o) => { if (o.opacity != null) opacity = o.opacity; if (o.targetAngle != null) targetAngle = o.targetAngle; if (o.renderAngle != null) renderAngle = o.renderAngle; render() },
+      _tick: () => tick(),
+      _render: () => render(),
+    }
   }
-  return api
 }
 
-// Baker en venstretung + bunn-tung mørkning inn i panel-materialet via
-// shader-hook. Mørkningen blir en del av bildet -> ligger alltid presist på
-// det, uansett bue eller skjermformat. (Erstatter den gamle DOM-rammen som
-// måtte jaktes til å matche det buede panelet.)
+// Baker venstretung + bunn-tung mørkning inn i panel-materialet via shader-hook.
 function applyPanelShade(mat) {
   const [dr, dg, db] = CONFIG.shadeColor
   const f = (n) => n.toFixed(4)
@@ -431,9 +410,6 @@ function applyPanelShade(mat) {
       '#include <map_fragment>',
       `#include <map_fragment>
       {
-        // Venstretung: holder seg mørk lenger utover (som den gamle 100deg-
-        // gradienten) i stedet for å falle raskt av -- så hele tekstblokka,
-        // også høyre ende av h1, ligger på mørk grunn.
         float lx = clamp(vMapUv.x / ${f(CONFIG.shadeLeftEnd)}, 0.0, 1.0);
         float leftDark = ${f(CONFIG.shadeMax)} * pow(1.0 - lx, ${f(CONFIG.shadeLeftFalloff)});
         float botDark = smoothstep(0.58, 0.0, vMapUv.y) * ${f(CONFIG.shadeBottomBoost)};
@@ -444,7 +420,7 @@ function applyPanelShade(mat) {
   }
 }
 
-// Hvit avrundet rektangel på svart -- brukes som alphaMap (grønn kanal).
+// Hvit avrundet rektangel på svart -- alphaMap (grønn kanal).
 function makeRoundedRectAlpha(rFrac) {
   const w = 1024, h = 512
   const c = document.createElement('canvas')
@@ -461,7 +437,7 @@ function makeRoundedRectAlpha(rFrac) {
   return t
 }
 
-// Radial svart→gjennomsiktig, myk kontaktskygge.
+// Radial svart->gjennomsiktig, myk kontaktskygge.
 function makeRadialShadow() {
   const s = 256
   const c = document.createElement('canvas')
