@@ -260,6 +260,13 @@ img { max-width: 100%; display: block; }
   justify-content: center;
   max-width: 33rem;
   animation: hero-in .7s .15s both cubic-bezier(.2, .7, .2, 1);
+  transition: opacity .3s ease, transform .3s ease;
+}
+/* Bla: teksten fades raskt ut, byttes usynlig, fades inn med det nye bildet. */
+.carousel-stage.is-turning .hero-content {
+  opacity: 0;
+  transform: translateY(6px);
+  transition: opacity .12s ease, transform .12s ease;
 }
 .hero-content .eyebrow,
 .hero-content h1,

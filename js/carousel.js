@@ -42,13 +42,23 @@ const CONFIG = {
 }
 
 // Slot-oppsett. angle = senter-theta på sylinderen (0 = front, mot kamera).
-// image = null gir tom slot. Full løkke (4 bilder) -> ingen glipe når man blar.
-// TODO (Ricky): bytt de tre siste til ekte brede foto av klinikken/brygga.
+// caption = teksten som fades inn når slotten lander foran. Slot 0 sin caption
+// leses fra .hero-content i HTML (SSR-en / no-JS-visningen), så den er null her.
+// TODO (Ricky): bytt bildene til ekte brede foto + skriv ekte captions for 1-3.
 const SLOTS = [
-  { angle: 0,               image: 'Bilder/havn-hero.jpg' }, // front / HERO
-  { angle: Math.PI / 2,     image: 'Bilder/havn-hero.jpg' }, // høyre
-  { angle: Math.PI,         image: 'Bilder/havn-hero.jpg' }, // bak
-  { angle: -Math.PI / 2,    image: 'Bilder/havn-hero.jpg' }, // venstre
+  { angle: 0,            image: 'Bilder/havn-hero.jpg', caption: null }, // front / HERO (tekst fra HTML)
+  { angle: Math.PI / 2,  image: 'Bilder/havn-hero.jpg', caption: {
+      eyebrow: 'Erfarne tannleger',
+      h1: 'Skånsom behandling i hvert steg',
+      lead: 'Vi tar oss tid, forklarer underveis og tilpasser alt til deg.' } },
+  { angle: Math.PI,      image: 'Bilder/havn-hero.jpg', caption: {
+      eyebrow: 'Midt i Holmestrand',
+      h1: 'Rett ved brygga, enkelt å komme til',
+      lead: 'Havnegaten 7 – kort vei fra tog, buss og parkering.' } },
+  { angle: -Math.PI / 2, image: 'Bilder/havn-hero.jpg', caption: {
+      eyebrow: 'Hele smilet ditt',
+      h1: 'Fra rutinekontroll til større behandlinger',
+      lead: 'Alltid med et tydelig kostnadsoverslag før vi starter.' } },
 ]
 
 export function initCarousel(canvas) {
@@ -197,6 +207,50 @@ export function initCarousel(canvas) {
 
   const filledAngles = SLOTS.filter(s => s.image).map(s => -s.angle) // rotation.y som setter slotten front
 
+  // ---- Bildetekster (én per slot) ----------------------------------
+  // .hero-content i HTML er slot 0 sin tekst (SSR / no-JS). De andre kommer
+  // fra SLOTS[i].caption. Ved bla: teksten fades ut (CSS .is-turning), byttes
+  // mens den er usynlig, og fades inn med det nye bildet.
+  const capEls = {
+    eyebrow: stage.querySelector('.hero-content .eyebrow'),
+    h1: stage.querySelector('.hero-content h1'),
+    lead: stage.querySelector('.hero-content .lead'),
+  }
+  const captions = SLOTS.map((s, i) => s.caption || (i === 0 ? {
+    eyebrow: capEls.eyebrow && capEls.eyebrow.textContent,
+    h1: capEls.h1 && capEls.h1.textContent,
+    lead: capEls.lead && capEls.lead.textContent,
+  } : null))
+  let currentSlot = 0
+  let turning = false
+
+  const slotAt = (angle) => (((Math.round(-angle / CONFIG.slotArc)) % 4) + 4) % 4
+
+  function applyCaption(i) {
+    const c = captions[i]
+    if (!c) return
+    if (capEls.eyebrow && c.eyebrow != null) capEls.eyebrow.textContent = c.eyebrow
+    if (capEls.h1 && c.h1 != null) capEls.h1.textContent = c.h1
+    if (capEls.lead && c.lead != null) capEls.lead.textContent = c.lead
+  }
+
+  // Kalles fra step(): markér at teksten skal fades ut hvis slotten endrer seg.
+  function beginTurnIfSlotChanges() {
+    if (reduced) return
+    if (slotAt(targetAngle) !== currentSlot && !turning) {
+      turning = true
+      stage.classList.add('is-turning')
+    }
+  }
+
+  // Kalles fra tick() når rotasjonen har satt seg: bytt tekst (mens den er
+  // usynlig) og fade den inn igjen.
+  function settleCaption() {
+    const dest = slotAt(targetAngle)
+    if (dest !== currentSlot) { currentSlot = dest; applyCaption(dest) }
+    if (turning) { turning = false; stage.classList.remove('is-turning') }
+  }
+
   function nearestFilled(a) {
     let best = a, bestD = Infinity
     for (const base of filledAngles) {
@@ -215,9 +269,9 @@ export function initCarousel(canvas) {
       a += dir * CONFIG.slotArc
       // land bare på en fylt slot
       const snapped = nearestFilled(a)
-      if (Math.abs(snapped - a) < 1e-3) { targetAngle = snapped; wake(); return }
+      if (Math.abs(snapped - a) < 1e-3) { targetAngle = snapped; beginTurnIfSlotChanges(); wake(); return }
     }
-    targetAngle = nearestFilled(a); wake()
+    targetAngle = nearestFilled(a); beginTurnIfSlotChanges(); wake()
   }
 
   // ---- Interaksjon ---------------------------------------------------
@@ -272,7 +326,7 @@ export function initCarousel(canvas) {
     if (opacity < 1) opacity = Math.min(1, opacity + 0.06)
 
     const settled = Math.abs(targetAngle - renderAngle) < 0.0004 && opacity >= 1
-    if (settled) { renderAngle = targetAngle; idle = true }
+    if (settled) { renderAngle = targetAngle; idle = true; settleCaption() }
 
     render()
     // Slå av den statiske fallback-en FØRST når canvas har malt minst én
