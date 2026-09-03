@@ -4,15 +4,16 @@
 // står stille rett på fronten. Front-slotten leser nesten flatt = HERO-bildet,
 // sidepanelene krummer bakover. Man blar ved å rotere løkka om Y-aksen.
 //
-// MOBIL (<= 640px): en helt vanlig scroll-snap-karusell -- nettleseren gjør
-// sveip + fart + snapp nativt. Three.js lastes ikke i det hele tatt her.
+// MOBIL (<= CONFIG.mobileMaxPx): en helt vanlig scroll-snap-karusell -- nett-
+// leseren gjør sveip + fart + snapp nativt. Three.js lastes ikke her.
 //
-// Delt: bildetekstene (én per slot, fades ut/inn ved bla) og prikkene.
+// Krysser man grensa (typ. mobil-rotasjon) bygges karusellen OM live: den ene
+// modusen ryddes bort, den andre monteres. Delt tilstand (hvilket bilde, prik-
+// kene, bildetekstene) beholdes. Feiler WebGL/JS: .hero-poster blir stående.
 //
-// Feiler WebGL/JS: .hero-poster (uskarpt stillbilde + tekst) blir stående som
-// en helt vanlig hero. Alt er parametrisert i CONFIG. Bytt bildene i SLOTS.
+// Alt er parametrisert i CONFIG. Bytt bildene i SLOTS.
 
-let THREE   // lastes dynamisk kun på desktop
+let THREE   // lastes dynamisk kun på desktop, gjenbrukes etterpå
 
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v))
 const DEG = Math.PI / 180
@@ -72,10 +73,10 @@ export async function initCarousel(canvas) {
   if (!canvas) return
   const stage = canvas.parentElement
   const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches
-  const isMobile = matchMedia(CONFIG.mobileQuery).matches
   const filled = SLOTS.filter(s => s.image)
+  const DEV = location.hostname === 'localhost' || location.hostname === '127.0.0.1'
 
-  // ================= DELT: bildetekster + prikker =================
+  // ================= DELT: bildetekster + prikker (lever hele tiden) =========
   const capEls = {
     eyebrow: stage.querySelector('.hero-content .eyebrow'),
     h1: stage.querySelector('.hero-content h1'),
@@ -88,7 +89,7 @@ export async function initCarousel(canvas) {
   } : null))
   let currentSlot = 0
   let capTimer = null
-  let goToIndex = () => {}   // settes av desktop-/mobil-grenen
+  let goToIndex = () => {}   // settes av aktiv modus
 
   function applyCaption(i) {
     const c = captions[i]
@@ -98,7 +99,6 @@ export async function initCarousel(canvas) {
     if (capEls.lead && c.lead != null) capEls.lead.textContent = c.lead
   }
 
-  // Prikker -- "det er flere bilder" + hvilket man er på. Tappbare.
   const dotWrap = document.createElement('div')
   dotWrap.className = 'carousel-dots'
   const dots = SLOTS.map((s, i) => {
@@ -123,7 +123,6 @@ export async function initCarousel(canvas) {
       else d.removeAttribute('aria-current')
     })
   }
-  setCurrentSlot(0)
 
   // Fade teksten UT (CSS .is-turning), bytt den mens den er usynlig, fade INN.
   function goCaption(dest) {
@@ -137,8 +136,9 @@ export async function initCarousel(canvas) {
     }, CONFIG.captionOutMs)
   }
 
-  // ================= MOBIL: vanlig scroll-snap-karusell =================
-  if (isMobile) {
+  // ================= MOBIL: vanlig scroll-snap-karusell =====================
+  function mountMobile() {
+    const ac = new AbortController()
     stage.classList.add('is-mobile', 'is-ready')
 
     const strip = document.createElement('div')
@@ -157,251 +157,314 @@ export async function initCarousel(canvas) {
     stage.appendChild(strip)
     stage.appendChild(scrim)
 
+    // Start på samme bilde som man var på (viktig ved rotasjon).
+    let scrollIdx = currentSlot
+    requestAnimationFrame(() => { strip.scrollLeft = currentSlot * strip.clientWidth })
+    setCurrentSlot(currentSlot)
+
     goToIndex = (i) => slides[i] && slides[i].scrollIntoView({
       behavior: 'smooth', inline: 'center', block: 'nearest',
     })
 
-    // Hvilken slide er nærmest midten -> aktiv prikk + caption byttes RETT
-    // (ingen fade på mobil -- teksten skal føles festet til bildene mens de sklir).
-    let scrollIdx = 0
+    // Nærmeste slide -> aktiv prikk + caption byttes RETT (ingen fade på mobil).
     strip.addEventListener('scroll', () => {
-      const i = Math.max(0, Math.min(slides.length - 1,
-        Math.round(strip.scrollLeft / strip.clientWidth)))
+      const i = clamp(Math.round(strip.scrollLeft / strip.clientWidth), 0, slides.length - 1)
       if (i !== scrollIdx) { scrollIdx = i; setCurrentSlot(i) }
-    }, { passive: true })
+    }, { passive: true, signal: ac.signal })
 
-    if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') {
-      window.__cx = { mobile: true, goToIndex, slot: () => currentSlot }
+    if (DEV) window.__cx = { mobile: true, goToIndex, slot: () => currentSlot }
+
+    return () => {
+      ac.abort()
+      strip.remove()
+      scrim.remove()
+      stage.classList.remove('is-mobile', 'is-ready')
     }
-    return
   }
 
-  // ================= DESKTOP: buet 3D-løkke (Three.js) =================
-  try {
-    THREE = await import('three')
-  } catch (e) {
-    console.warn('Hero-karusell: three.js lastet ikke, viser posteren videre.', e)
-    stage.classList.add('no-webgl')
-    return
-  }
+  // ================= DESKTOP: buet 3D-løkke (Three.js) ======================
+  async function mountDesktop(isCurrent) {
+    if (!THREE) {
+      try { THREE = await import('three') }
+      catch (e) {
+        console.warn('Hero-karusell: three.js lastet ikke, viser posteren videre.', e)
+        stage.classList.add('no-webgl')
+        return () => stage.classList.remove('no-webgl')
+      }
+    }
+    if (!isCurrent()) return () => {}
 
-  const arcLen = CONFIG.radius * CONFIG.panelArc
-  const panelH = arcLen / CONFIG.aspect
-  const chord = 2 * CONFIG.radius * Math.sin(CONFIG.panelArc / 2)
+    const ac = new AbortController()
+    // Frisk <canvas> hver gang -> ingen WebGL-kontekst-gjenbruksproblemer.
+    let cv = stage.querySelector('#carousel-canvas')
+    cv.replaceWith(cv = cv.cloneNode(false))
 
-  const scene = new THREE.Scene()
-  scene.fog = new THREE.Fog(CONFIG.bg, 1, 10)
-  const camera = new THREE.PerspectiveCamera(CONFIG.fov, 1, 0.1, 100)
+    const arcLen = CONFIG.radius * CONFIG.panelArc
+    const panelH = arcLen / CONFIG.aspect
+    const chord = 2 * CONFIG.radius * Math.sin(CONFIG.panelArc / 2)
 
-  let renderer
-  try {
-    renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true })
-  } catch (e) {
-    console.warn('Hero-karusell: WebGL utilgjengelig, viser posteren videre.', e)
-    stage.classList.add('no-webgl')
-    return
-  }
-  renderer.setClearColor(CONFIG.bg, 0)
-  const maxAniso = renderer.capabilities.getMaxAnisotropy()
+    const scene = new THREE.Scene()
+    scene.fog = new THREE.Fog(CONFIG.bg, 1, 10)
+    const camera = new THREE.PerspectiveCamera(CONFIG.fov, 1, 0.1, 100)
 
-  const loop = new THREE.Group()
-  scene.add(loop)
+    let renderer
+    try {
+      renderer = new THREE.WebGLRenderer({ canvas: cv, alpha: true, antialias: true })
+    } catch (e) {
+      console.warn('Hero-karusell: WebGL utilgjengelig, viser posteren videre.', e)
+      stage.classList.add('no-webgl')
+      return () => stage.classList.remove('no-webgl')
+    }
+    renderer.setClearColor(CONFIG.bg, 0)
+    const maxAniso = renderer.capabilities.getMaxAnisotropy()
 
-  const alphaMap = makeRoundedRectAlpha(CONFIG.cornerRadius)
-  const loader = new THREE.TextureLoader()
-  const panels = []
+    const loop = new THREE.Group()
+    scene.add(loop)
+    const alphaMap = makeRoundedRectAlpha(CONFIG.cornerRadius)
+    const loader = new THREE.TextureLoader()
+    const panels = []
 
-  for (const slot of SLOTS) {
-    if (!slot.image) continue
-    const geo = new THREE.CylinderGeometry(
-      CONFIG.radius, CONFIG.radius, panelH, 64, 1, true,
-      slot.angle - CONFIG.panelArc / 2, CONFIG.panelArc
+    for (const slot of SLOTS) {
+      if (!slot.image) continue
+      const geo = new THREE.CylinderGeometry(
+        CONFIG.radius, CONFIG.radius, panelH, 64, 1, true,
+        slot.angle - CONFIG.panelArc / 2, CONFIG.panelArc
+      )
+      const tex = loader.load(slot.image, () => render())
+      tex.colorSpace = THREE.SRGBColorSpace
+      tex.anisotropy = maxAniso
+      const mat = new THREE.MeshBasicMaterial({
+        map: tex, alphaMap, transparent: true,
+        side: THREE.DoubleSide, toneMapped: false,
+      })
+      applyPanelShade(mat)
+      const mesh = new THREE.Mesh(geo, mat)
+      loop.add(mesh)
+      panels.push(mesh)
+    }
+
+    const shadowTex = makeRadialShadow()
+    const shadow = new THREE.Mesh(
+      new THREE.PlaneGeometry(chord * 1.5, CONFIG.radius * 1.7),
+      new THREE.MeshBasicMaterial({
+        map: shadowTex, transparent: true, opacity: 0.22,
+        depthWrite: false, color: 0x4a3b2a, toneMapped: false,
+      })
     )
-    const tex = loader.load(slot.image, () => render())
-    tex.colorSpace = THREE.SRGBColorSpace
-    tex.anisotropy = maxAniso
-    const mat = new THREE.MeshBasicMaterial({
-      map: tex, alphaMap, transparent: true,
-      side: THREE.DoubleSide, toneMapped: false,
-    })
-    applyPanelShade(mat)
-    const mesh = new THREE.Mesh(geo, mat)
-    loop.add(mesh)
-    panels.push(mesh)
-  }
+    shadow.rotation.x = -Math.PI / 2
+    shadow.position.y = -panelH / 2 - 0.05
+    shadow.position.z = CONFIG.radius * 0.15
+    scene.add(shadow)
 
-  const shadow = new THREE.Mesh(
-    new THREE.PlaneGeometry(chord * 1.5, CONFIG.radius * 1.7),
-    new THREE.MeshBasicMaterial({
-      map: makeRadialShadow(), transparent: true, opacity: 0.22,
-      depthWrite: false, color: 0x4a3b2a, toneMapped: false,
-    })
-  )
-  shadow.rotation.x = -Math.PI / 2
-  shadow.position.y = -panelH / 2 - 0.05
-  shadow.position.z = CONFIG.radius * 0.15
-  scene.add(shadow)
-
-  // Projiser front-panelets kanter -> CSS-variabler teksten ankres til.
-  const _v = new THREE.Vector3()
-  function updateTextAnchor() {
-    const w = stage.clientWidth, h = stage.clientHeight
-    if (!w || !h) return
-    camera.updateMatrixWorld()
-    const halfArc = CONFIG.panelArc / 2
-    const halfH = panelH / 2
-    const px = (x, y, z) => { _v.set(x, y, z).project(camera); return [(_v.x * 0.5 + 0.5) * w, (-_v.y * 0.5 + 0.5) * h] }
-    const [leftPx] = px(CONFIG.radius * Math.sin(-halfArc), 0, CONFIG.radius * Math.cos(-halfArc))
-    const [rightPx] = px(CONFIG.radius * Math.sin(halfArc), 0, CONFIG.radius * Math.cos(halfArc))
-    const cx = CONFIG.radius * Math.sin(-halfArc), cz = CONFIG.radius * Math.cos(-halfArc)
-    const [, topPy] = px(cx, halfH, cz)
-    const [, botPy] = px(cx, -halfH, cz)
-    stage.style.setProperty('--panel-left', leftPx + 'px')
-    stage.style.setProperty('--panel-w', (rightPx - leftPx) + 'px')
-    stage.style.setProperty('--panel-top', topPy + 'px')
-    stage.style.setProperty('--panel-h', (botPy - topPy) + 'px')
-  }
-
-  function fitCamera(viewportAspect, stageW) {
-    const vFov = CONFIG.fov * DEG
-    const hFov = 2 * Math.atan(Math.tan(vFov / 2) * viewportAspect)
-    const frontZ = CONFIG.radius * Math.cos(CONFIG.panelArc / 2)
-    const wFrac = Math.min(CONFIG.heroMaxWidthPx, stageW - CONFIG.heroSideMarginPx) / stageW
-    const distFit = ((chord / 2) / wFrac) / Math.tan(hFov / 2)
-    const distFill = ((panelH / 2) / CONFIG.heroHeightFrac) / Math.tan(vFov / 2)
-    const dist = viewportAspect >= 1 ? Math.min(distFit, distFill) : distFill
-    const camZ = frontZ + dist
-    camera.position.set(0, 0, camZ)
-    camera.lookAt(0, 0, 0)
-    scene.fog.near = camZ - CONFIG.radius * 0.40
-    scene.fog.far = camZ + CONFIG.radius * 0.95
-  }
-
-  let targetAngle = 0
-  let renderAngle = 0
-  let opacity = reduced ? 1 : 0
-  let idle = true
-  let ready = false
-  let readyArmed = false
-
-  const filledAngles = SLOTS.filter(s => s.image).map(s => -s.angle)
-  const slotAt = (angle) => (((Math.round(-angle / CONFIG.slotArc)) % 4) + 4) % 4
-
-  function nearestFilled(a) {
-    let best = a, bestD = Infinity
-    for (const base of filledAngles) {
-      const k = Math.round((a - base) / (2 * Math.PI))
-      const cand = base + k * 2 * Math.PI
-      const d = Math.abs(cand - a)
-      if (d < bestD) { bestD = d; best = cand }
+    const _v = new THREE.Vector3()
+    function updateTextAnchor() {
+      const w = stage.clientWidth, h = stage.clientHeight
+      if (!w || !h) return
+      camera.updateMatrixWorld()
+      const halfArc = CONFIG.panelArc / 2
+      const halfH = panelH / 2
+      const px = (x, y, z) => { _v.set(x, y, z).project(camera); return [(_v.x * 0.5 + 0.5) * w, (-_v.y * 0.5 + 0.5) * h] }
+      const [leftPx] = px(CONFIG.radius * Math.sin(-halfArc), 0, CONFIG.radius * Math.cos(-halfArc))
+      const [rightPx] = px(CONFIG.radius * Math.sin(halfArc), 0, CONFIG.radius * Math.cos(halfArc))
+      const cx = CONFIG.radius * Math.sin(-halfArc), cz = CONFIG.radius * Math.cos(-halfArc)
+      const [, topPy] = px(cx, halfH, cz)
+      const [, botPy] = px(cx, -halfH, cz)
+      stage.style.setProperty('--panel-left', leftPx + 'px')
+      stage.style.setProperty('--panel-w', (rightPx - leftPx) + 'px')
+      stage.style.setProperty('--panel-top', topPy + 'px')
+      stage.style.setProperty('--panel-h', (botPy - topPy) + 'px')
     }
-    return best
-  }
 
-  function step(dir) {
-    let a = targetAngle
-    for (let i = 0; i < 4; i++) {
-      a += dir * CONFIG.slotArc
-      const snapped = nearestFilled(a)
-      if (Math.abs(snapped - a) < 1e-3) { targetAngle = snapped; goCaption(slotAt(targetAngle)); wake(); return }
+    function fitCamera(viewportAspect, stageW) {
+      const vFov = CONFIG.fov * DEG
+      const hFov = 2 * Math.atan(Math.tan(vFov / 2) * viewportAspect)
+      const frontZ = CONFIG.radius * Math.cos(CONFIG.panelArc / 2)
+      const wFrac = Math.min(CONFIG.heroMaxWidthPx, stageW - CONFIG.heroSideMarginPx) / stageW
+      const distFit = ((chord / 2) / wFrac) / Math.tan(hFov / 2)
+      const distFill = ((panelH / 2) / CONFIG.heroHeightFrac) / Math.tan(vFov / 2)
+      const dist = viewportAspect >= 1 ? Math.min(distFit, distFill) : distFill
+      const camZ = frontZ + dist
+      camera.position.set(0, 0, camZ)
+      camera.lookAt(0, 0, 0)
+      scene.fog.near = camZ - CONFIG.radius * 0.40
+      scene.fog.far = camZ + CONFIG.radius * 0.95
     }
-    targetAngle = nearestFilled(a); goCaption(slotAt(targetAngle)); wake()
-  }
 
-  goToIndex = function goToSlot(i) {
-    if (i === currentSlot) return
-    const base = -SLOTS[i].angle
-    targetAngle = base + Math.round((targetAngle - base) / (2 * Math.PI)) * 2 * Math.PI
-    goCaption(slotAt(targetAngle))
-    wake()
-  }
+    // Start på samme bilde man var på (viktig ved rotasjon).
+    let targetAngle = -SLOTS[currentSlot].angle
+    let renderAngle = targetAngle
+    let opacity = reduced ? 1 : 0
+    let idle = true
+    let ready = false
+    let readyArmed = false
+    let alive = true
 
-  // Sveip = ett steg. Fri rotasjon droppet (åpner cream-glipe midt i svingen);
-  // under terskel bare et lite "etter" som snapper tilbake.
-  let dragging = false, startX = 0, swiped = false
-  canvas.addEventListener('pointerdown', e => {
-    dragging = true; swiped = false; startX = e.clientX
-    canvas.setPointerCapture(e.pointerId)
-    canvas.style.cursor = 'grabbing'
-  })
-  canvas.addEventListener('pointermove', e => {
-    if (!dragging || swiped) return
-    const dx = e.clientX - startX
-    if (Math.abs(dx) >= CONFIG.swipePx) {
-      swiped = true
-      canvas.style.cursor = 'grab'
-      step(dx < 0 ? -1 : 1)
-    } else {
-      renderAngle = targetAngle + clamp(dx * CONFIG.dragGive, -CONFIG.dragGiveMax, CONFIG.dragGiveMax)
+    const filledAngles = SLOTS.filter(s => s.image).map(s => -s.angle)
+    const slotAt = (angle) => (((Math.round(-angle / CONFIG.slotArc)) % 4) + 4) % 4
+
+    function nearestFilled(a) {
+      let best = a, bestD = Infinity
+      for (const base of filledAngles) {
+        const k = Math.round((a - base) / (2 * Math.PI))
+        const cand = base + k * 2 * Math.PI
+        const d = Math.abs(cand - a)
+        if (d < bestD) { bestD = d; best = cand }
+      }
+      return best
+    }
+
+    function step(dir) {
+      let a = targetAngle
+      for (let i = 0; i < 4; i++) {
+        a += dir * CONFIG.slotArc
+        const snapped = nearestFilled(a)
+        if (Math.abs(snapped - a) < 1e-3) { targetAngle = snapped; goCaption(slotAt(targetAngle)); wake(); return }
+      }
+      targetAngle = nearestFilled(a); goCaption(slotAt(targetAngle)); wake()
+    }
+
+    goToIndex = function goToSlot(i) {
+      if (i === currentSlot) return
+      const base = -SLOTS[i].angle
+      targetAngle = base + Math.round((targetAngle - base) / (2 * Math.PI)) * 2 * Math.PI
+      goCaption(slotAt(targetAngle))
       wake()
     }
-  })
-  function endDrag() {
-    if (!dragging) return
-    dragging = false
-    canvas.style.cursor = 'grab'
-    if (!swiped) wake()
-  }
-  canvas.addEventListener('pointerup', endDrag)
-  canvas.addEventListener('pointercancel', endDrag)
 
-  stage.querySelector('.carousel-nav--prev')?.addEventListener('click', () => step(1))
-  stage.querySelector('.carousel-nav--next')?.addEventListener('click', () => step(-1))
-
-  addEventListener('keydown', e => {
-    if (e.key === 'ArrowLeft') step(1)
-    else if (e.key === 'ArrowRight') step(-1)
-  })
-
-  let raf = null
-  function wake() { idle = false; if (!raf) raf = requestAnimationFrame(tick) }
-
-  function tick() {
-    raf = null
-    renderAngle += (targetAngle - renderAngle) * CONFIG.ease
-    if (opacity < 1) opacity = Math.min(1, opacity + 0.06)
-    const settled = Math.abs(targetAngle - renderAngle) < 0.0004 && opacity >= 1
-    if (settled) { renderAngle = targetAngle; idle = true }
-    render()
-    if (!ready && opacity >= 1) {
-      if (readyArmed) { ready = true; stage.classList.add('is-ready') }
-      else { readyArmed = true }
+    let dragging = false, startX = 0, swiped = false
+    cv.addEventListener('pointerdown', e => {
+      dragging = true; swiped = false; startX = e.clientX
+      cv.setPointerCapture(e.pointerId)
+      cv.style.cursor = 'grabbing'
+    }, { signal: ac.signal })
+    cv.addEventListener('pointermove', e => {
+      if (!dragging || swiped) return
+      const dx = e.clientX - startX
+      if (Math.abs(dx) >= CONFIG.swipePx) {
+        swiped = true
+        cv.style.cursor = 'grab'
+        step(dx < 0 ? -1 : 1)
+      } else {
+        renderAngle = targetAngle + clamp(dx * CONFIG.dragGive, -CONFIG.dragGiveMax, CONFIG.dragGiveMax)
+        wake()
+      }
+    }, { signal: ac.signal })
+    const endDrag = () => {
+      if (!dragging) return
+      dragging = false
+      cv.style.cursor = 'grab'
+      if (!swiped) wake()
     }
-    if (!idle || dragging || !ready) raf = requestAnimationFrame(tick)
-  }
+    cv.addEventListener('pointerup', endDrag, { signal: ac.signal })
+    cv.addEventListener('pointercancel', endDrag, { signal: ac.signal })
 
-  function render() {
-    loop.rotation.y = renderAngle
-    for (const p of panels) p.material.opacity = opacity
-    shadow.material.opacity = 0.22 * opacity
-    renderer.render(scene, camera)
-  }
+    stage.querySelector('.carousel-nav--prev')?.addEventListener('click', () => step(1), { signal: ac.signal })
+    stage.querySelector('.carousel-nav--next')?.addEventListener('click', () => step(-1), { signal: ac.signal })
+    addEventListener('keydown', e => {
+      if (e.key === 'ArrowLeft') step(1)
+      else if (e.key === 'ArrowRight') step(-1)
+    }, { signal: ac.signal })
 
-  function resize() {
-    const w = stage.clientWidth
-    const h = stage.clientHeight
-    renderer.setPixelRatio(Math.min(devicePixelRatio, 2))
-    renderer.setSize(w, h, false)
-    camera.aspect = w / h
-    fitCamera(w / h, w)
-    camera.updateProjectionMatrix()
-    updateTextAnchor()
-    render()
-  }
-  const ro = new ResizeObserver(resize)
-  ro.observe(stage)
-  resize()
-  wake()
+    let raf = null
+    function wake() { idle = false; if (alive && !raf) raf = requestAnimationFrame(tick) }
 
-  if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') {
-    window.__cx = {
-      step, resize, goToIndex,
-      _state: () => ({ targetAngle, renderAngle, opacity, idle, dragging, ready, currentSlot }),
-      _set: (o) => { if (o.opacity != null) opacity = o.opacity; if (o.targetAngle != null) targetAngle = o.targetAngle; if (o.renderAngle != null) renderAngle = o.renderAngle; render() },
-      _tick: () => tick(),
-      _render: () => render(),
+    function tick() {
+      raf = null
+      if (!alive) return
+      renderAngle += (targetAngle - renderAngle) * CONFIG.ease
+      if (opacity < 1) opacity = Math.min(1, opacity + 0.06)
+      const settled = Math.abs(targetAngle - renderAngle) < 0.0004 && opacity >= 1
+      if (settled) { renderAngle = targetAngle; idle = true }
+      render()
+      if (!ready && opacity >= 1) {
+        if (readyArmed) { ready = true; stage.classList.add('is-ready') }
+        else { readyArmed = true }
+      }
+      if (!idle || dragging || !ready) raf = requestAnimationFrame(tick)
+    }
+
+    function render() {
+      if (!alive) return
+      loop.rotation.y = renderAngle
+      for (const p of panels) p.material.opacity = opacity
+      shadow.material.opacity = 0.22 * opacity
+      renderer.render(scene, camera)
+    }
+
+    function resize() {
+      const w = stage.clientWidth
+      const h = stage.clientHeight
+      renderer.setPixelRatio(Math.min(devicePixelRatio, 2))
+      renderer.setSize(w, h, false)
+      camera.aspect = w / h
+      fitCamera(w / h, w)
+      camera.updateProjectionMatrix()
+      updateTextAnchor()
+      render()
+    }
+    const ro = new ResizeObserver(resize)
+    ro.observe(stage)
+    resize()
+    wake()
+
+    if (DEV) {
+      window.__cx = {
+        step, resize, goToIndex,
+        _state: () => ({ targetAngle, renderAngle, opacity, idle, dragging, ready, currentSlot }),
+        _set: (o) => { if (o.opacity != null) opacity = o.opacity; if (o.targetAngle != null) targetAngle = o.targetAngle; if (o.renderAngle != null) renderAngle = o.renderAngle; render() },
+        _tick: () => tick(),
+        _render: () => render(),
+      }
+    }
+
+    return () => {
+      alive = false
+      cancelAnimationFrame(raf)
+      ac.abort()
+      ro.disconnect()
+      clearTimeout(capTimer)
+      panels.forEach(p => { p.geometry.dispose(); p.material.map && p.material.map.dispose(); p.material.dispose() })
+      shadow.geometry.dispose(); shadowTex.dispose(); shadow.material.dispose()
+      alphaMap.dispose()
+      renderer.dispose()
+      renderer.forceContextLoss && renderer.forceContextLoss()
+      ;['--panel-left', '--panel-w', '--panel-top', '--panel-h'].forEach(v => stage.style.removeProperty(v))
+      stage.classList.remove('is-ready')
     }
   }
+
+  // ================= Modusvelger + rebuild ved grensekryssing ===============
+  const mq = matchMedia(CONFIG.mobileQuery)
+  let unmount = () => {}
+  let curMode = null
+  let gen = 0
+  let forceMode = null   // dev: overstyr fra konsollen
+
+  async function apply() {
+    const want = forceMode || (mq.matches ? 'mobile' : 'desktop')
+    if (want === curMode) return
+    const myGen = ++gen
+    try { unmount() } catch (e) { /* nothing */ }
+    unmount = () => {}
+    curMode = want
+    // Nullstill en evt. tekst-fade som var i gang -> ny modus starter rent.
+    clearTimeout(capTimer)
+    stage.classList.remove('is-turning')
+    setCurrentSlot(currentSlot)
+
+    if (want === 'mobile') {
+      unmount = mountMobile()
+    } else {
+      const u = await mountDesktop(() => gen === myGen)
+      if (gen !== myGen) { try { u && u() } catch (e) {} ; return }
+      unmount = u || (() => {})
+    }
+  }
+
+  await apply()
+  mq.addEventListener('change', apply)
+
+  if (DEV) window.__cxMode = (m) => { forceMode = m || null; return apply() }
 }
 
 // Baker venstretung + bunn-tung mørkning inn i panel-materialet via shader-hook.
