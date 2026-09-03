@@ -196,6 +196,7 @@ export function initCarousel(canvas) {
   let opacity = reduced ? 1 : 0
   let idle = true
   let ready = false
+  let readyArmed = false
 
   const filledAngles = SLOTS.filter(s => s.image).map(s => -s.angle) // rotation.y som setter slotten front
 
@@ -277,9 +278,13 @@ export function initCarousel(canvas) {
     if (settled) { renderAngle = targetAngle; idle = true }
 
     render()
-    // Karusellen står nå og maler -> slå av den statiske fallback-en.
-    if (!ready && opacity >= 1) { ready = true; stage.classList.add('is-ready') }
-    if (!idle || dragging) raf = requestAnimationFrame(tick)
+    // Slå av den statiske fallback-en FØRST når canvas har malt minst én
+    // full-opacity frame -- ellers blir det en kort udekket blink på hard reload.
+    if (!ready && opacity >= 1) {
+      if (readyArmed) { ready = true; stage.classList.add('is-ready') }
+      else { readyArmed = true }
+    }
+    if (!idle || dragging || !ready) raf = requestAnimationFrame(tick)
   }
 
   function render() {

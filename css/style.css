@@ -220,18 +220,19 @@ img { max-width: 100%; display: block; }
   height: 100%;
   object-fit: cover;
   z-index: 0;
-  transition: opacity .5s ease .15s;
+  transition: opacity .6s ease .25s;
 }
 .carousel-stage.is-ready .hero-fallback { opacity: 0; }
 
 /* Scrim bak teksten -- KUN fallback. Live-karusellen har mørkningen bakt inn i
-   bildet, så denne fades ut når .is-ready. */
+   bildet, så denne fades ut når .is-ready (carousel.js venter til canvas har
+   malt en full-opacity frame før den flagger, så overgangen er sømløs). */
 .hero-fallback-scrim {
   position: absolute;
   inset: 0;
   z-index: 2;
   pointer-events: none;
-  transition: opacity .5s ease .15s;
+  transition: opacity .6s ease .25s;
   background: linear-gradient(100deg,
     rgba(38,28,19,.86) 0%,
     rgba(38,28,19,.5) 30%,
@@ -239,6 +240,10 @@ img { max-width: 100%; display: block; }
     rgba(38,28,19,0) 68%);
 }
 .carousel-stage.is-ready .hero-fallback-scrim { opacity: 0; }
+
+/* Hero-entré -- ren CSS, spiller én gang ved last, ingen JS-avhengighet.
+   prefers-reduced-motion nulles av den globale regelen nederst. */
+@keyframes hero-in { from { opacity: 0; transform: translateY(10px); } }
 
 /* Teksten -- boksen dekker panelets trygge indre boks (topp/høyde ved
    hjørne-nivået), teksten sentreres i den -> kan aldri havne over/under det
@@ -254,6 +259,7 @@ img { max-width: 100%; display: block; }
   flex-direction: column;
   justify-content: center;
   max-width: 33rem;
+  animation: hero-in .7s .15s both cubic-bezier(.2, .7, .2, 1);
 }
 .hero-content .eyebrow,
 .hero-content h1,
