@@ -372,6 +372,8 @@ html:not(.js) .hero-poster img,
 
 @media (max-width: 640px) {
   .carousel-stage { height: 72vh; min-height: 460px; }
+  /* Slipp den native horisontal-scrollen løs (stagen var pan-y for desktop-drummen). */
+  .carousel-stage.is-mobile { touch-action: auto; }
   .hero-poster::after {       /* bunn-tung på mobil -- teksten står nede */
     background: linear-gradient(178deg,
       rgba(38,28,19,.28) 0%,
@@ -385,7 +387,11 @@ html:not(.js) .hero-poster img,
     height: auto;
     max-width: none;
     justify-content: flex-end;
+    /* Sveip skal gå gjennom teksten til karusellen -- bare knappene/lenka fanger. */
+    pointer-events: none;
   }
+  .hero-content .btn,
+  .hero-content .rating-badge { pointer-events: auto; }
   .hero-content h1 { font-size: var(--text-2xl); }
   .carousel-dots {                                /* midtstilt nederst på mobil */
     left: 50%; transform: translateX(-50%);
