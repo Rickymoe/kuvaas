@@ -225,13 +225,20 @@ img { max-width: 100%; display: block; }
   z-index: 0;
   overflow: hidden;
   border-radius: 30px;
-  transition: opacity .6s ease .25s;
+  transition: opacity .6s ease .2s;
+  /* Blur-up: bittelite uskarpt bilde (inline data-URI, ~1 kB) som er der
+     umiddelbart. Karusellen toner inn SKARP oppå -> "bildet kommer i fokus".
+     Uskarpheten skjuler at posisjonen kan avvike et par px under toningen. */
+  background: #2b2016 url("data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDABQODxIPDRQSEBIXFRQYHjIhHhwcHj0sLiQySUBMS0dARkVQWnNiUFVtVkVGZIhlbXd7gYKBTmCNl4x9lnN+gXz/2wBDARUXFx4aHjshITt8U0ZTfHx8fHx8fHx8fHx8fHx8fHx8fHx8fHx8fHx8fHx8fHx8fHx8fHx8fHx8fHx8fHx8fHz/wAARCAALABgDASIAAhEBAxEB/8QAHwAAAQUBAQEBAQEAAAAAAAAAAAECAwQFBgcICQoL/8QAtRAAAgEDAwIEAwUFBAQAAAF9AQIDAAQRBRIhMUEGE1FhByJxFDKBkaEII0KxwRVS0fAkM2JyggkKFhcYGRolJicoKSo0NTY3ODk6Q0RFRkdISUpTVFVWV1hZWmNkZWZnaGlqc3R1dnd4eXqDhIWGh4iJipKTlJWWl5iZmqKjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uHi4+Tl5ufo6erx8vP09fb3+Pn6/8QAHwEAAwEBAQEBAQEBAQAAAAAAAAECAwQFBgcICQoL/8QAtREAAgECBAQDBAcFBAQAAQJ3AAECAxEEBSExBhJBUQdhcRMiMoEIFEKRobHBCSMzUvAVYnLRChYkNOEl8RcYGRomJygpKjU2Nzg5OkNERUZHSElKU1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6goOEhYaHiImKkpOUlZaXmJmaoqOkpaanqKmqsrO0tba3uLm6wsPExcbHyMnK0tPU1dbX2Nna4uPk5ebn6Onq8vP09fb3+Pn6/9oADAMBAAIRAxEAPwCw99a5xTBe24PtXNSsQ3Bqu0j8/Ma19pNbsyVOJ2w1a3hXIXNFcQJZP75orNybNFFI/9k=") center/cover no-repeat;
 }
 .hero-fallback img {
   width: 100%;
   height: 100%;
   object-fit: cover;
   display: block;
+  /* Fallback-bildet er ALLTID uskarpt -- det skarpe kommer fra canvas. */
+  filter: blur(20px);
+  transform: scale(1.12);
 }
 .hero-fallback::after {          /* scrim -- matcher den innbakte shader-mørkningen */
   content: "";
