@@ -24,24 +24,23 @@
     <!-- Statisk fallback: vises til carousel.js legger .is-ready på stagen,
          og blir stående ved manglende JS/WebGL (beholder alt-tekst + SEO). -->
     <img class="hero-fallback" src="Bilder/havn-hero.jpg" alt="Småbåthavna i Holmestrand sentrum en solfylt høstdag" fetchpriority="high" width="2560" height="1213" />
-    <!-- Den faste "skjermen": posisjoneres av CSS-variabler som carousel.js
-         setter fra front-panelets faktiske projiserte omriss (--frame-x/y/w/h).
-         Bærer gradienten (::before) + teksten. Fallback-verdier i CSS gjør at
-         den også rammer det statiske bildet ved manglende JS/WebGL. -->
-    <div class="hero-frame">
-      <div class="hero-content">
-        <div class="eyebrow reveal">Tannklinikken Jack Kuvaas AS</div>
-        <h1 class="reveal" style="transition-delay:.08s">Din tannlege på bryggen i Holmestrand</h1>
-        <p class="lead reveal" style="transition-delay:.16s">Moderne tannklinikk med trygg og omsorgsfull behandling. Bestill tannlegetime hos oss i dag!</p>
-        <div class="hero-cta reveal" style="transition-delay:.24s">
-          <a href="tel:+4733052350" class="btn btn-terracotta">Bestill time – 33 05 23 50</a>
-          <a href="behandlinger.html" class="btn btn-outline">Se behandlinger</a>
-        </div>
-        <a href="https://www.google.com/maps/search/?api=1&query=Tannklinikken+Jack+Kuvaas+AS%2C+Havnegaten+7%2C+3080+Holmestrand" target="_blank" rel="noopener" class="rating-badge reveal" style="transition-delay:.3s">
-          <span class="rating-stars" aria-hidden="true"><span class="stars-tom">★★★★★</span><span class="stars-fyll">★★★★★</span></span>
-          <span aria-hidden="true"><span id="rating-value">4,7</span> av <span id="rating-count">61</span> anmeldelser på Google</span>
-        </a>
+    <!-- Mørkningen bak teksten er bakt inn i selve karusell-bildet (shader,
+         js/carousel.js). .hero-fallback-scrim under dekker fallback-tilfellet
+         (ingen JS/WebGL). Teksten ankres til --panel-left/-w som carousel.js
+         setter fra front-panelets projiserte kanter. -->
+    <div class="hero-fallback-scrim" aria-hidden="true"></div>
+    <div class="hero-content">
+      <div class="eyebrow reveal">Tannklinikken Jack Kuvaas AS</div>
+      <h1 class="reveal" style="transition-delay:.08s">Din tannlege på bryggen i Holmestrand</h1>
+      <p class="lead reveal" style="transition-delay:.16s">Moderne tannklinikk med trygg og omsorgsfull behandling. Bestill tannlegetime hos oss i dag!</p>
+      <div class="hero-cta reveal" style="transition-delay:.24s">
+        <a href="tel:+4733052350" class="btn btn-terracotta">Bestill time – 33 05 23 50</a>
+        <a href="behandlinger.html" class="btn btn-outline">Se behandlinger</a>
       </div>
+      <a href="https://www.google.com/maps/search/?api=1&query=Tannklinikken+Jack+Kuvaas+AS%2C+Havnegaten+7%2C+3080+Holmestrand" target="_blank" rel="noopener" class="rating-badge reveal" style="transition-delay:.3s">
+        <span class="rating-stars" aria-hidden="true"><span class="stars-tom">★★★★★</span><span class="stars-fyll">★★★★★</span></span>
+        <span aria-hidden="true"><span id="rating-value">4,7</span> av <span id="rating-count">61</span> anmeldelser på Google</span>
+      </a>
     </div>
     <button type="button" class="carousel-nav carousel-nav--prev" aria-label="Forrige bilde">
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>

@@ -20,13 +20,22 @@ const CONFIG = {
   panelArc: THREE.MathUtils.degToRad(38), // hvert bilde spenner 38 grader -> fronten leser flatt, sidene fortsatt synlige
   aspect: 2560 / 1213,       // kildebildets bredde/høyde
   heroWidthFrac: 0.74,       // landskap: front-bildet fyller så mye av lerretsbredden
-  heroWidthFracPortrait: 1.35, // portrett: la heroen blø litt ut i bredden -> mer høyde, senter-beskåret
+  heroWidthFracPortrait: 2.5, // portrett: stor nok til at HØYDEN binder -> panelet
+                             // fyller stagen vertikalt, senter-beskåret i bredden (mobil-cover)
   heroHeightFrac: 0.94,      // heroen skal aldri bli høyere enn så mye av lerretet
   fov: 35,
   cornerRadius: 0.045,       // avrundede hjørner på bildet, andel av panelhøyden
   bg: 0xfdf6ec,              // = --cream (tåke + clear color)
-  frameInsetXPx: 2,          // krymp rammen nesten umerkelig inn i bredden
-                             // (høyden: rammen legges på den indre boksen, se updateFrameVars)
+
+  // Mørkning bakt inn i HVERT panel-materiale (shader) -- gradienten ER bildet,
+  // så den ligger alltid presist på det uansett bue/skjermbredde. Venstretung
+  // (for desktop-teksten) + ekstra mot bunn (for mobil-teksten nede).
+  shadeColor: [0.09, 0.065, 0.045],  // mørkningsfarge (nær brun-svart)
+  shadeLeftStart: 0.04,      // uv.x der venstre-mørkningen er på topp
+  shadeLeftEnd: 0.60,        // uv.x der den er borte
+  shadeBottomBoost: 0.5,     // ekstra mørkning mot bunnen (bl.a. for mobil-tekst nede)
+  shadeMax: 0.90,            // tak på total mørkning
+
   swipePx: 45,               // dra så langt (px) for å bla ett steg
   dragGive: 0.0018,          // rad per px "etter" mens man drar under terskelen
   dragGiveMax: 0.06,         // ...men aldri mer enn dette (~3,5°) -- holder glipa lukket
@@ -104,6 +113,7 @@ export function initCarousel(canvas) {
       side: THREE.DoubleSide,
       toneMapped: false,
     })
+    applyPanelShade(mat)
 
     const mesh = new THREE.Mesh(geo, mat)
     loop.add(mesh)
@@ -123,46 +133,25 @@ export function initCarousel(canvas) {
   shadow.position.z = CONFIG.radius * 0.15
   scene.add(shadow)
 
-  // ---- Fast ramme: projiser front-panelets omriss til stage-piksler ---
-  // Den faste "skjermen" er nå et DOM-element (.hero-frame) som bærer
-  // gradienten + teksten. Her regner vi ut hvor front-panelet faktisk havner
-  // på skjermen og skriver det som CSS-variabler -- så DOM-rammen ankrer seg
-  // til den EKTE geometrien, riktig på alle skjermbredder (ingen vw-gjetting).
+  // ---- Tekst-anker: projiser front-panelets venstre/høyre kant ------
+  // Gradienten er bakt inn i bildet (applyPanelShade), så vi trenger ikke
+  // matche noen ramme. Vi projiserer bare front-panelets venstre og høyre
+  // kant (rene loddrette linjer -- ingen bue-problematikk) til stage-piksler,
+  // så HTML-teksten kan ankres til den EKTE geometrien: --panel-left/-w.
   const _v = new THREE.Vector3()
-  function updateFrameVars() {
+  function updateTextAnchor() {
     const w = stage.clientWidth, h = stage.clientHeight
     if (!w || !h) return
     camera.updateMatrixWorld()
     const halfArc = CONFIG.panelArc / 2
-    const halfH = panelH / 2
-    // Sampl topp- og bunnkanten på tvers av buen. Fronten buer, så topp-
-    // kanten projiserer som en svak ∩ (høyest i midten, dypere i hjørnene) og
-    // bunnen som en ∪. Rammen skal ligge på den INDRE boksen -- topp ved
-    // hjørne-nivået, bunn ved hjørne-nivået -- så den rette kanten aldri
-    // stikker utenfor det buede bildet. Den lille "buken" som blir igjen
-    // midt oppe/nede skjules av at gradienten fjæres i topp/bunn (CSS).
-    let minX = Infinity, maxX = -Infinity
-    let topInner = -Infinity, botInner = Infinity   // hjørne-nivåene
-    for (let i = 0; i <= 10; i++) {
-      const th = -halfArc + (i / 10) * CONFIG.panelArc
-      const x = CONFIG.radius * Math.sin(th)
-      const z = CONFIG.radius * Math.cos(th)
-      _v.set(x, halfH, z).project(camera)
-      const topPy = (-_v.y * 0.5 + 0.5) * h
-      const topPx = (_v.x * 0.5 + 0.5) * w
-      _v.set(x, -halfH, z).project(camera)
-      const botPy = (-_v.y * 0.5 + 0.5) * h
-      const botPx = (_v.x * 0.5 + 0.5) * w
-      if (topPy > topInner) topInner = topPy   // størst py = lavest topp-punkt = hjørnet
-      if (botPy < botInner) botInner = botPy   // minst py = høyest bunn-punkt = hjørnet
-      minX = Math.min(minX, topPx, botPx)
-      maxX = Math.max(maxX, topPx, botPx)
+    const project = (th) => {
+      _v.set(CONFIG.radius * Math.sin(th), 0, CONFIG.radius * Math.cos(th)).project(camera)
+      return (_v.x * 0.5 + 0.5) * w
     }
-    const ix = CONFIG.frameInsetXPx
-    stage.style.setProperty('--frame-x', (minX + ix) + 'px')
-    stage.style.setProperty('--frame-y', topInner + 'px')
-    stage.style.setProperty('--frame-w', (maxX - minX - ix * 2) + 'px')
-    stage.style.setProperty('--frame-h', (botInner - topInner) + 'px')
+    const leftPx = project(-halfArc)
+    const rightPx = project(halfArc)
+    stage.style.setProperty('--panel-left', leftPx + 'px')
+    stage.style.setProperty('--panel-w', (rightPx - leftPx) + 'px')
   }
 
   // ---- Kamera-avstand ------------------------------------------------
@@ -298,7 +287,7 @@ export function initCarousel(canvas) {
     camera.aspect = w / h
     fitCamera(w / h)
     camera.updateProjectionMatrix()
-    updateFrameVars()
+    updateTextAnchor()
     render()
   }
   const ro = new ResizeObserver(resize)
@@ -319,6 +308,28 @@ export function initCarousel(canvas) {
     window.__cx = api
   }
   return api
+}
+
+// Baker en venstretung + bunn-tung mørkning inn i panel-materialet via
+// shader-hook. Mørkningen blir en del av bildet -> ligger alltid presist på
+// det, uansett bue eller skjermformat. (Erstatter den gamle DOM-rammen som
+// måtte jaktes til å matche det buede panelet.)
+function applyPanelShade(mat) {
+  const [dr, dg, db] = CONFIG.shadeColor
+  const f = (n) => n.toFixed(4)
+  mat.customProgramCacheKey = () => 'kuvaas-panel-shade'
+  mat.onBeforeCompile = (shader) => {
+    shader.fragmentShader = shader.fragmentShader.replace(
+      '#include <map_fragment>',
+      `#include <map_fragment>
+      {
+        float leftDark = smoothstep(${f(CONFIG.shadeLeftEnd)}, ${f(CONFIG.shadeLeftStart)}, vMapUv.x);
+        float botDark = smoothstep(0.55, 0.0, vMapUv.y) * ${f(CONFIG.shadeBottomBoost)};
+        float d = min(${f(CONFIG.shadeMax)}, leftDark + botDark);
+        diffuseColor.rgb = mix(diffuseColor.rgb, vec3(${f(dr)}, ${f(dg)}, ${f(db)}), d);
+      }`
+    )
+  }
 }
 
 // Hvit avrundet rektangel på svart -- brukes som alphaMap (grønn kanal).
