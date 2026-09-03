@@ -13,7 +13,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/style.css">
-<!-- Start three.js-hentingen tidlig -> kortere fallback-blink før karusellen -->
+<!-- Start three.js-hentingen tidlig -> kortere poster-fase før karusellen -->
 <link rel="preconnect" href="https://unpkg.com" crossorigin>
 <link rel="modulepreload" href="https://unpkg.com/three@0.165.0/build/three.module.js">
 </head>
@@ -24,11 +24,12 @@
 <section class="hero" aria-label="Bildekarusell">
   <div id="carousel-stage" class="carousel-stage">
     <canvas id="carousel-canvas" aria-hidden="true"></canvas>
-    <!-- Statisk fallback -- rammet + tonet som karusell-panelet (::after-scrim),
-         så overgangen når canvas kommer opp er sømløs. Vises til carousel.js
-         legger .is-ready på stagen; blir stående ved manglende JS/WebGL
-         (beholder alt-tekst + SEO). Ankret til --panel-* som carousel.js setter. -->
-    <div class="hero-fallback">
+    <!-- Poster: uskarpt stillbilde (blur-up, inline data-URI + <img>) rammet og
+         tonet som karusell-panelet. Vises umiddelbart; karusellen toner skarp
+         inn oppå og carousel.js legger .is-ready på stagen -> posteren fader ut.
+         Blir stående ved manglende JS/WebGL (beholder alt-tekst + SEO).
+         Ankret til --panel-* som carousel.js setter. -->
+    <div class="hero-poster">
       <img src="Bilder/havn-hero.jpg" alt="Småbåthavna i Holmestrand sentrum en solfylt høstdag" fetchpriority="high" width="2560" height="1213" />
     </div>
     <!-- Ikke .reveal her: heroen er over folden og ligger inline i denne fila,

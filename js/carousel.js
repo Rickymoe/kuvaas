@@ -7,7 +7,7 @@
 // Løkka er full -- 4 bilder, ett i hver slot -- så det aldri er en glipe når
 // man blar. Man blar ved å rotere hele løkka om Y-aksen.
 //
-// Feiler WebGL (eller JS), gjør initCarousel ingenting -- da blir .hero-fallback
+// Feiler WebGL (eller JS), gjør initCarousel ingenting -- da blir .hero-poster
 // (statisk <img> + scrim + tekst) stående som en helt vanlig hero.
 //
 // Alt er parametrisert i CONFIG. Bytt ut bildene ved å redigere SLOTS.
@@ -89,7 +89,8 @@ export function initCarousel(canvas) {
   try {
     renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true })
   } catch (e) {
-    console.warn('Hero-karusell: WebGL utilgjengelig, bruker statisk fallback.', e)
+    console.warn('Hero-karusell: WebGL utilgjengelig, viser posteren videre.', e)
+    stage.classList.add('no-webgl')   // -> CSS viser poster-<img> (ekte foto-hero)
     return
   }
   renderer.setClearColor(CONFIG.bg, 0)
@@ -201,8 +202,8 @@ export function initCarousel(canvas) {
 
   // ---- Rotasjonstilstand ---------------------------------------------
   let targetAngle = 0
-  // Ingen overrotasjon ved start: panelet skal ligge PRESIST oppå .hero-fallback
-  // så krysstoningen fallback -> canvas blir usynlig. Bare opacity fader inn.
+  // Ingen overrotasjon ved start: panelet skal ligge PRESIST oppå .hero-poster
+  // så krysstoningen poster -> canvas blir usynlig. Bare opacity fader inn.
   let renderAngle = 0
   let opacity = reduced ? 1 : 0
   let idle = true
@@ -332,7 +333,7 @@ export function initCarousel(canvas) {
     if (settled) { renderAngle = targetAngle; idle = true }
 
     render()
-    // Slå av den statiske fallback-en FØRST når canvas har malt minst én
+    // Slå av posteren FØRST når canvas har malt minst én
     // full-opacity frame -- ellers blir det en kort udekket blink på hard reload.
     if (!ready && opacity >= 1) {
       if (readyArmed) { ready = true; stage.classList.add('is-ready') }
