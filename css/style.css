@@ -259,16 +259,18 @@ img { max-width: 100%; display: block; }
   flex-direction: column;
   justify-content: center;
   max-width: 33rem;
-  animation: hero-in .7s .15s both cubic-bezier(.2, .7, .2, 1);
-  /* Fade INN (etter bytte): rolig. */
-  transition: opacity .55s ease .06s, transform .55s ease .06s;
+  /* backwards (ikke both): entré-animasjonen slutter å styre opacity/transform
+     når den er ferdig, så transition-en under faktisk kan kjøre ved bla.
+     (both = forwards -> animasjonen "holder" verdiene og undertrykker transition.) */
+  animation: hero-in .7s .15s backwards cubic-bezier(.2, .7, .2, 1);
+  /* Fade INN (etter bytte) -- MIDLERTIDIG stor verdi for å se effekten. */
+  transition: opacity 2s ease .06s, transform 2s ease .06s;
 }
-/* Bla: teksten fades ut, byttes usynlig, fades inn med det nye bildet.
-   Fade UT er litt raskere enn inn, men ikke brå. */
+/* Bla: teksten fades ut, byttes usynlig, fades inn med det nye bildet. */
 .carousel-stage.is-turning .hero-content {
   opacity: 0;
   transform: translateY(8px);
-  transition: opacity .32s ease, transform .32s ease;
+  transition: opacity 1.2s ease, transform 1.2s ease;
 }
 .hero-content .eyebrow,
 .hero-content h1,

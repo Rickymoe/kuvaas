@@ -39,8 +39,9 @@ const CONFIG = {
   dragGive: 0.0018,          // rad per px "etter" mens man drar under terskelen
   dragGiveMax: 0.06,         // ...men aldri mer enn dette (~3,5°) -- holder glipa lukket
   ease: 0.09,                // hvor raskt render-vinkelen tar igjen mål-vinkelen
-  captionSwapAt: 0.11,       // rad igjen av rotasjonen når bildeteksten byttes/fades inn
-                             // (ellers venter faden på at ease krymper helt til ~0)
+  captionOutMs: 1350,        // ms teksten er ute før den byttes + fades inn -- bør være
+                             // >= CSS-ens fade-ut (.is-turning transition) + en liten hold
+                             // MIDLERTIDIG stor (matcher 1.2s fade-ut) for å se effekten
 }
 
 // Slot-oppsett. angle = senter-theta på sylinderen (0 = front, mot kamera).
@@ -224,7 +225,7 @@ export function initCarousel(canvas) {
     lead: capEls.lead && capEls.lead.textContent,
   } : null))
   let currentSlot = 0
-  let turning = false
+  let capTimer = null
 
   const slotAt = (angle) => (((Math.round(-angle / CONFIG.slotArc)) % 4) + 4) % 4
 
@@ -236,21 +237,20 @@ export function initCarousel(canvas) {
     if (capEls.lead && c.lead != null) capEls.lead.textContent = c.lead
   }
 
-  // Kalles fra step(): markér at teksten skal fades ut hvis slotten endrer seg.
-  function beginTurnIfSlotChanges() {
-    if (reduced) return
-    if (slotAt(targetAngle) !== currentSlot && !turning) {
-      turning = true
-      stage.classList.add('is-turning')
-    }
-  }
-
-  // Kalles fra tick() når rotasjonen har satt seg: bytt tekst (mens den er
-  // usynlig) og fade den inn igjen.
-  function settleCaption() {
+  // Kalles fra step()/sveip. Fade UT nå (CSS .is-turning), så -- etter en fast
+  // tid, uavhengig av rotasjonshastigheten -- bytt tekst mens den er usynlig og
+  // fjern klassen så CSS fader den INN igjen.
+  function beginTurn() {
     const dest = slotAt(targetAngle)
-    if (dest !== currentSlot) { currentSlot = dest; applyCaption(dest) }
-    if (turning) { turning = false; stage.classList.remove('is-turning') }
+    if (dest === currentSlot) return
+    if (reduced) { currentSlot = dest; applyCaption(dest); return }
+    stage.classList.add('is-turning')
+    clearTimeout(capTimer)
+    capTimer = setTimeout(() => {
+      const d = slotAt(targetAngle)   // kan ha endret seg hvis man blar igjen
+      if (d !== currentSlot) { currentSlot = d; applyCaption(d) }
+      stage.classList.remove('is-turning')
+    }, CONFIG.captionOutMs)
   }
 
   function nearestFilled(a) {
@@ -271,9 +271,9 @@ export function initCarousel(canvas) {
       a += dir * CONFIG.slotArc
       // land bare på en fylt slot
       const snapped = nearestFilled(a)
-      if (Math.abs(snapped - a) < 1e-3) { targetAngle = snapped; beginTurnIfSlotChanges(); wake(); return }
+      if (Math.abs(snapped - a) < 1e-3) { targetAngle = snapped; beginTurn(); wake(); return }
     }
-    targetAngle = nearestFilled(a); beginTurnIfSlotChanges(); wake()
+    targetAngle = nearestFilled(a); beginTurn(); wake()
   }
 
   // ---- Interaksjon ---------------------------------------------------
@@ -327,12 +327,8 @@ export function initCarousel(canvas) {
     renderAngle += (targetAngle - renderAngle) * CONFIG.ease
     if (opacity < 1) opacity = Math.min(1, opacity + 0.06)
 
-    const dr = Math.abs(targetAngle - renderAngle)
-    const settled = dr < 0.0004 && opacity >= 1
+    const settled = Math.abs(targetAngle - renderAngle) < 0.0004 && opacity >= 1
     if (settled) { renderAngle = targetAngle; idle = true }
-    // Bytt/fade inn bildeteksten når rotasjonen er nesten der -- ikke vent på
-    // at ease-en krymper helt til null (det tar ~1,5s).
-    if (turning && dr < CONFIG.captionSwapAt) settleCaption()
 
     render()
     // Slå av den statiske fallback-en FØRST når canvas har malt minst én
