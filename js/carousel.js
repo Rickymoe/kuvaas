@@ -39,6 +39,8 @@ const CONFIG = {
   dragGive: 0.0018,          // rad per px "etter" mens man drar under terskelen
   dragGiveMax: 0.06,         // ...men aldri mer enn dette (~3,5°) -- holder glipa lukket
   ease: 0.09,                // hvor raskt render-vinkelen tar igjen mål-vinkelen
+  captionSwapAt: 0.11,       // rad igjen av rotasjonen når bildeteksten byttes/fades inn
+                             // (ellers venter faden på at ease krymper helt til ~0)
 }
 
 // Slot-oppsett. angle = senter-theta på sylinderen (0 = front, mot kamera).
@@ -325,8 +327,12 @@ export function initCarousel(canvas) {
     renderAngle += (targetAngle - renderAngle) * CONFIG.ease
     if (opacity < 1) opacity = Math.min(1, opacity + 0.06)
 
-    const settled = Math.abs(targetAngle - renderAngle) < 0.0004 && opacity >= 1
-    if (settled) { renderAngle = targetAngle; idle = true; settleCaption() }
+    const dr = Math.abs(targetAngle - renderAngle)
+    const settled = dr < 0.0004 && opacity >= 1
+    if (settled) { renderAngle = targetAngle; idle = true }
+    // Bytt/fade inn bildeteksten når rotasjonen er nesten der -- ikke vent på
+    // at ease-en krymper helt til null (det tar ~1,5s).
+    if (turning && dr < CONFIG.captionSwapAt) settleCaption()
 
     render()
     // Slå av den statiske fallback-en FØRST når canvas har malt minst én
