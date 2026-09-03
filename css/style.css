@@ -263,14 +263,14 @@ img { max-width: 100%; display: block; }
      når den er ferdig, så transition-en under faktisk kan kjøre ved bla.
      (both = forwards -> animasjonen "holder" verdiene og undertrykker transition.) */
   animation: hero-in .7s .15s backwards cubic-bezier(.2, .7, .2, 1);
-  /* Fade INN (etter bytte) -- MIDLERTIDIG stor verdi for å se effekten. */
-  transition: opacity 2s ease .06s, transform 2s ease .06s;
+  /* Fade INN (etter tekstbytte). */
+  transition: opacity .6s ease .04s, transform .6s ease .04s;
 }
 /* Bla: teksten fades ut, byttes usynlig, fades inn med det nye bildet. */
 .carousel-stage.is-turning .hero-content {
   opacity: 0;
   transform: translateY(8px);
-  transition: opacity 1.2s ease, transform 1.2s ease;
+  transition: opacity .7s ease, transform .7s ease;
 }
 .hero-content .eyebrow,
 .hero-content h1,

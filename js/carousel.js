@@ -39,9 +39,8 @@ const CONFIG = {
   dragGive: 0.0018,          // rad per px "etter" mens man drar under terskelen
   dragGiveMax: 0.06,         // ...men aldri mer enn dette (~3,5°) -- holder glipa lukket
   ease: 0.09,                // hvor raskt render-vinkelen tar igjen mål-vinkelen
-  captionOutMs: 1350,        // ms teksten er ute før den byttes + fades inn -- bør være
-                             // >= CSS-ens fade-ut (.is-turning transition) + en liten hold
-                             // MIDLERTIDIG stor (matcher 1.2s fade-ut) for å se effekten
+  captionOutMs: 820,         // ms teksten er ute før den byttes + fades inn -- >= CSS-ens
+                             // fade-ut (.is-turning transition, .7s) + en liten hold
 }
 
 // Slot-oppsett. angle = senter-theta på sylinderen (0 = front, mot kamera).
