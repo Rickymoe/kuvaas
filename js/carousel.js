@@ -42,8 +42,12 @@ const CONFIG = {
   dragGiveMax: 0.06,
   ease: 0.09,
   captionOutMs: 820,         // ms teksten er ute før den byttes + fades inn
-  mobileQuery: '(max-width: 640px)',
+
+  // >>> GRENSA mobil / desktop. Endre dette tallet for å flytte den. <<<
+  // (Hold @media-verdien i css/style.css i sync -- den gjelder bare no-JS.)
+  mobileMaxPx: 640,
 }
+CONFIG.mobileQuery = `(max-width: ${CONFIG.mobileMaxPx}px)`
 
 // Slot-oppsett. caption = teksten som fades inn når slotten er i fokus. Slot 0
 // sin caption leses fra .hero-content i HTML (SSR / no-JS).
