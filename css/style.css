@@ -283,10 +283,11 @@ html:not(.js) .hero-poster img,
   z-index: 2;
   pointer-events: none;
   background: linear-gradient(178deg,
-    rgba(38,28,19,.14) 0%,
-    rgba(38,28,19,.04) 40%,
-    rgba(38,28,19,.5) 72%,
-    rgba(38,28,19,.9) 100%);
+    rgba(38,28,19,.28) 0%,
+    rgba(38,28,19,.12) 30%,
+    rgba(38,28,19,.34) 52%,
+    rgba(38,28,19,.66) 74%,
+    rgba(38,28,19,.92) 100%);
 }
 .carousel-stage.is-mobile #carousel-canvas,
 .carousel-stage.is-mobile .hero-poster { display: none; }
