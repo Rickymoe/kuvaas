@@ -19,11 +19,9 @@ const CONFIG = {
   slotArc: Math.PI / 2,      // 4 slots, 90 grader mellom hvert bildesenter
   panelArc: THREE.MathUtils.degToRad(38), // hvert bilde spenner 38 grader -> fronten leser flatt, sidene fortsatt synlige
   aspect: 2560 / 1213,       // kildebildets bredde/høyde
-  heroMaxWidthPx: 1120,      // landskap: panelet aldri bredere enn dette (som det gamle kortet)
+  heroMaxWidthPx: 1120,      // "fit": panelet aldri bredere enn dette (som det gamle kortet)
   heroSideMarginPx: 48,      // ...og aldri nærmere lerretskanten enn dette hver side
-  heroWidthFracPortrait: 2.5, // portrett: stor nok til at HØYDEN binder -> panelet
-                             // fyller stagen vertikalt, senter-beskåret i bredden (mobil-cover)
-  heroHeightFrac: 0.94,      // heroen skal aldri bli høyere enn så mye av lerretet
+  heroHeightFrac: 0.94,      // "fill": panelet dekker så mye av stage-høyden
   fov: 35,
   cornerRadius: 0.045,       // avrundede hjørner på bildet, andel av panelhøyden
   bg: 0xfdf6ec,              // = --cream (tåke + clear color)
@@ -161,24 +159,23 @@ export function initCarousel(canvas) {
   }
 
   // ---- Kamera-avstand ------------------------------------------------
-  // Landskap: bredden binder (heroen fyller ~heroWidthFrac av lerretet).
-  // Portrett/mobil: høyden binder (heroWidthFrac ville skjøvet kamera så
-  // langt bak at heroen forsvant i tåka). Tåka forankres til kamera-
-  // avstanden etterpå, så heroen alltid ligger klar av den.
+  // To rammer regnes ut, og vi tar den som gir STØRST panel:
+  //  - "fit":  panel = min(maks-px, viewport - margin) bredt (som det gamle
+  //            hero-kortet -> teksten med fast bredde skalerer identisk)
+  //  - "fill": panel = heroHeightFrac av stage-høyden (blør ut i bredden,
+  //            senter-beskåret)
+  // På brede skjermer vinner fit; på smale (og portrett) blir fit-panelet for
+  // lavt for teksten, og fill vinner -> panelet dekker stagen vertikalt.
   function fitCamera(viewportAspect, stageW) {
     const vFov = THREE.MathUtils.degToRad(CONFIG.fov)
     const hFov = 2 * Math.atan(Math.tan(vFov / 2) * viewportAspect)
     const frontZ = CONFIG.radius * Math.cos(CONFIG.panelArc / 2)
 
-    // Landskap: panel-bredden følger samme regel som det gamle hero-kortet --
-    // min(maks-px, viewport - margin) -> teksten (fast bredde) får alltid plass,
-    // og den "skalerer" identisk med den gamle visningen. Portrett: høyden binder.
-    const wFrac = viewportAspect >= 1
-      ? Math.min(CONFIG.heroMaxWidthPx, stageW - CONFIG.heroSideMarginPx) / stageW
-      : CONFIG.heroWidthFracPortrait
-    const distW = ((chord / 2) / wFrac) / Math.tan(hFov / 2)
-    const distH = ((panelH / 2) / CONFIG.heroHeightFrac) / Math.tan(vFov / 2)
-    const dist = Math.max(distW, distH)
+    const wFrac = Math.min(CONFIG.heroMaxWidthPx, stageW - CONFIG.heroSideMarginPx) / stageW
+    const distFit = ((chord / 2) / wFrac) / Math.tan(hFov / 2)
+    const distFill = ((panelH / 2) / CONFIG.heroHeightFrac) / Math.tan(vFov / 2)
+    // Mindre dist = kamera nærmere = større panel. Vi vil ha det største.
+    const dist = viewportAspect >= 1 ? Math.min(distFit, distFill) : distFill
 
     const camZ = frontZ + dist
     camera.position.set(0, 0, camZ)

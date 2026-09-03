@@ -195,14 +195,14 @@ img { max-width: 100%; display: block; }
 .carousel-stage {
   position: relative;
   width: 100%;
-  height: clamp(430px, 44vw, 580px);
+  height: clamp(460px, 46vw, 580px);
   overflow: hidden;
   touch-action: pan-y;   /* horisontal sveip -> karusell, vertikal -> scroll */
   /* Fallback-verdier til carousel.js har projisert de ekte. */
   --panel-left: max(24px, calc(50vw - 560px));
   --panel-w: min(1120px, calc(100vw - 48px));
-  --panel-top: 8%;
-  --panel-h: 84%;
+  --panel-top: 6%;
+  --panel-h: 88%;
 }
 #carousel-canvas {
   position: absolute;
@@ -252,7 +252,7 @@ img { max-width: 100%; display: block; }
 .hero-content {
   position: absolute;
   z-index: 3;
-  left: calc(var(--panel-left) + clamp(20px, 3vw, 56px));
+  left: max(20px, calc(var(--panel-left) + clamp(20px, 3vw, 56px)));
   top: var(--panel-top);
   height: var(--panel-h);
   display: flex;
