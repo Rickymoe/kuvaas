@@ -371,36 +371,43 @@ html:not(.js) .hero-poster img,
   .carousel-dot:hover { background: rgba(253,246,236,.8); }
 }
 
+/* ===== Mobil-karusellen aktiv (carousel.js la på .is-mobile) =====
+   Gjelder UANSETT orientering -- ikke bare @media -- siden JS bestemte layout
+   ved sidelast. (Roterer man til landskap må mobil-oppsettet henge med, ellers
+   dukker de døde pil-knappene opp fra desktop-CSS-en.) */
+.carousel-stage.is-mobile {
+  touch-action: auto;                /* slipp native horisontal-scroll løs (var pan-y) */
+  height: min(76vh, 620px);
+  min-height: 400px;
+}
+.carousel-stage.is-mobile .carousel-nav { display: none; }
+.carousel-stage.is-mobile .hero-content {
+  left: 20px; right: 20px;
+  top: auto; bottom: clamp(46px, 12vw, 74px);   /* plass til prikkene under */
+  height: auto;
+  max-width: none;
+  justify-content: flex-end;
+  pointer-events: none;              /* sveip går gjennom teksten til karusellen */
+}
+.carousel-stage.is-mobile .hero-content .btn,
+.carousel-stage.is-mobile .hero-content .rating-badge { pointer-events: auto; }
+.carousel-stage.is-mobile .hero-content h1 { font-size: var(--text-2xl); }
+.carousel-stage.is-mobile .carousel-dots {
+  left: 50%; transform: translateX(-50%);
+  top: auto; bottom: 18px;
+}
+
 @media (max-width: 640px) {
+  /* Uten JS: posteren står som hero. Bunn-tung gradient (tekst nederst). */
   .carousel-stage { height: 72vh; min-height: 460px; }
-  /* Slipp den native horisontal-scrollen løs (stagen var pan-y for desktop-drummen). */
-  .carousel-stage.is-mobile { touch-action: auto; }
-  .hero-poster::after {       /* bunn-tung på mobil -- teksten står nede */
+  .hero-poster::after {
     background: linear-gradient(178deg,
       rgba(38,28,19,.28) 0%,
       rgba(38,28,19,.1) 34%,
       rgba(38,28,19,.5) 64%,
       rgba(38,28,19,.88) 100%);
   }
-  .hero-content {
-    left: 20px; right: 20px;
-    top: auto; bottom: clamp(46px, 13vw, 74px);   /* plass til prikkene under */
-    height: auto;
-    max-width: none;
-    justify-content: flex-end;
-    /* Sveip skal gå gjennom teksten til karusellen -- bare knappene/lenka fanger. */
-    pointer-events: none;
-  }
-  .hero-content .btn,
-  .hero-content .rating-badge { pointer-events: auto; }
   .hero-content h1 { font-size: var(--text-2xl); }
-  .carousel-dots {                                /* midtstilt nederst på mobil */
-    left: 50%; transform: translateX(-50%);
-    top: auto; bottom: 18px;
-  }
-  /* Mobil: panelet er kant-i-kant, så pilene ville ligge oppå teksten.
-     Skjul dem -- sveip gjør jobben (carousel.js swipePx). */
-  .carousel-nav { display: none; }
 }
 @media (prefers-reduced-motion: reduce) {
   .carousel-nav { transition: none; }
