@@ -25,9 +25,8 @@ const CONFIG = {
   fov: 35,
   cornerRadius: 0.045,       // avrundede hjørner på bildet, andel av panelhøyden
   bg: 0xfdf6ec,              // = --cream (tåke + clear color)
-  frameInsetXPx: 2,          // krymp rammen inn fra panel-omrisset i bredden (nesten null)
-  frameInsetYPx: 13,         // ...og mer i høyden -- absorberer front-panelets svake "buk"
-                             //    så rammens rette topp/bunn-kant holder seg på bildet
+  frameInsetXPx: 2,          // krymp rammen nesten umerkelig inn i bredden
+                             // (høyden: rammen legges på den indre boksen, se updateFrameVars)
   swipePx: 45,               // dra så langt (px) for å bla ett steg
   dragGive: 0.0018,          // rad per px "etter" mens man drar under terskelen
   dragGiveMax: 0.06,         // ...men aldri mer enn dette (~3,5°) -- holder glipa lukket
@@ -136,27 +135,34 @@ export function initCarousel(canvas) {
     camera.updateMatrixWorld()
     const halfArc = CONFIG.panelArc / 2
     const halfH = panelH / 2
-    let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity
-    // Sampl topp- og bunnkanten på tvers av bue (fanger "buk"-en ved theta=0).
-    for (let i = 0; i <= 8; i++) {
-      const th = -halfArc + (i / 8) * CONFIG.panelArc
+    // Sampl topp- og bunnkanten på tvers av buen. Fronten buer, så topp-
+    // kanten projiserer som en svak ∩ (høyest i midten, dypere i hjørnene) og
+    // bunnen som en ∪. Rammen skal ligge på den INDRE boksen -- topp ved
+    // hjørne-nivået, bunn ved hjørne-nivået -- så den rette kanten aldri
+    // stikker utenfor det buede bildet. Den lille "buken" som blir igjen
+    // midt oppe/nede skjules av at gradienten fjæres i topp/bunn (CSS).
+    let minX = Infinity, maxX = -Infinity
+    let topInner = -Infinity, botInner = Infinity   // hjørne-nivåene
+    for (let i = 0; i <= 10; i++) {
+      const th = -halfArc + (i / 10) * CONFIG.panelArc
       const x = CONFIG.radius * Math.sin(th)
       const z = CONFIG.radius * Math.cos(th)
-      for (const y of [-halfH, halfH]) {
-        _v.set(x, y, z).project(camera)
-        const px = (_v.x * 0.5 + 0.5) * w
-        const py = (-_v.y * 0.5 + 0.5) * h
-        if (px < minX) minX = px
-        if (px > maxX) maxX = px
-        if (py < minY) minY = py
-        if (py > maxY) maxY = py
-      }
+      _v.set(x, halfH, z).project(camera)
+      const topPy = (-_v.y * 0.5 + 0.5) * h
+      const topPx = (_v.x * 0.5 + 0.5) * w
+      _v.set(x, -halfH, z).project(camera)
+      const botPy = (-_v.y * 0.5 + 0.5) * h
+      const botPx = (_v.x * 0.5 + 0.5) * w
+      if (topPy > topInner) topInner = topPy   // størst py = lavest topp-punkt = hjørnet
+      if (botPy < botInner) botInner = botPy   // minst py = høyest bunn-punkt = hjørnet
+      minX = Math.min(minX, topPx, botPx)
+      maxX = Math.max(maxX, topPx, botPx)
     }
-    const ix = CONFIG.frameInsetXPx, iy = CONFIG.frameInsetYPx
+    const ix = CONFIG.frameInsetXPx
     stage.style.setProperty('--frame-x', (minX + ix) + 'px')
-    stage.style.setProperty('--frame-y', (minY + iy) + 'px')
+    stage.style.setProperty('--frame-y', topInner + 'px')
     stage.style.setProperty('--frame-w', (maxX - minX - ix * 2) + 'px')
-    stage.style.setProperty('--frame-h', (maxY - minY - iy * 2) + 'px')
+    stage.style.setProperty('--frame-h', (botInner - topInner) + 'px')
   }
 
   // ---- Kamera-avstand ------------------------------------------------

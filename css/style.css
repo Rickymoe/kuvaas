@@ -250,9 +250,12 @@ img { max-width: 100%; display: block; }
     rgba(38,28,19,.66) 34%,
     rgba(38,28,19,.24) 58%,
     rgba(38,28,19,0) 78%);
-  /* Venstre kant fjæret via 0%->3%-stoppene over, så gradienten aldri hard-
-     starter mot en glipe. Topp/bunn dekkes av at fronten er nesten flat
-     (panelArc) + at rammen trekkes inn (frameInsetPx). */
+  /* Venstre kant fjæret via 0->3%-stoppene. Rammen ligger på bildets INDRE
+     boks (updateFrameVars), så den svake "buken" på midten stikker et par px
+     over/under rammen -- fjær topp/bunn så det ikke blir en hard gradient-
+     kant der. Teksten sitter i midten, uberørt. */
+  -webkit-mask: linear-gradient(180deg, transparent 0, #000 5%, #000 95%, transparent 100%);
+  mask: linear-gradient(180deg, transparent 0, #000 5%, #000 95%, transparent 100%);
 }
 
 .hero-content {
