@@ -199,8 +199,10 @@ img { max-width: 100%; display: block; }
   overflow: hidden;
   touch-action: pan-y;   /* horisontal sveip -> karusell, vertikal -> scroll */
   /* Fallback-verdier til carousel.js har projisert de ekte. */
-  --panel-left: 14vw;
-  --panel-w: 62vw;
+  --panel-left: max(24px, calc(50vw - 560px));
+  --panel-w: min(1120px, calc(100vw - 48px));
+  --panel-top: 8%;
+  --panel-h: 84%;
 }
 #carousel-canvas {
   position: absolute;
@@ -238,14 +240,15 @@ img { max-width: 100%; display: block; }
 }
 .carousel-stage.is-ready .hero-fallback-scrim { opacity: 0; }
 
-/* Teksten -- ankret til front-panelets venstre kant + bredde. */
+/* Teksten -- ankret til front-panelets venstre kant + vertikale senter.
+   Fast max-width (som det gamle hero-kortet) -> h1 skalerer identisk. */
 .hero-content {
   position: absolute;
   z-index: 3;
-  left: calc(var(--panel-left) + clamp(16px, 2.4vw, 40px));
-  top: 50%;
+  left: calc(var(--panel-left) + clamp(20px, 3vw, 56px));
+  top: calc(var(--panel-top) + var(--panel-h) / 2);
   transform: translateY(-50%);
-  width: min(34rem, calc(var(--panel-w) * 0.52));
+  max-width: 33rem;
 }
 .hero-content .eyebrow,
 .hero-content h1,
@@ -255,7 +258,7 @@ img { max-width: 100%; display: block; }
    kanten, så de ikke forsvinner ut i periferien på store skjermer. */
 .carousel-nav {
   position: absolute;
-  top: 50%;
+  top: calc(var(--panel-top) + var(--panel-h) / 2);
   transform: translateY(-50%);
   width: 44px;
   height: 44px;

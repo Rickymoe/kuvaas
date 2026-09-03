@@ -19,7 +19,8 @@ const CONFIG = {
   slotArc: Math.PI / 2,      // 4 slots, 90 grader mellom hvert bildesenter
   panelArc: THREE.MathUtils.degToRad(38), // hvert bilde spenner 38 grader -> fronten leser flatt, sidene fortsatt synlige
   aspect: 2560 / 1213,       // kildebildets bredde/høyde
-  heroWidthFrac: 0.74,       // landskap: front-bildet fyller så mye av lerretsbredden
+  heroMaxWidthPx: 1120,      // landskap: panelet aldri bredere enn dette (som det gamle kortet)
+  heroSideMarginPx: 48,      // ...og aldri nærmere lerretskanten enn dette hver side
   heroWidthFracPortrait: 2.5, // portrett: stor nok til at HØYDEN binder -> panelet
                              // fyller stagen vertikalt, senter-beskåret i bredden (mobil-cover)
   heroHeightFrac: 0.94,      // heroen skal aldri bli høyere enn så mye av lerretet
@@ -133,25 +134,30 @@ export function initCarousel(canvas) {
   shadow.position.z = CONFIG.radius * 0.15
   scene.add(shadow)
 
-  // ---- Tekst-anker: projiser front-panelets venstre/høyre kant ------
+  // ---- Tekst-anker: projiser front-panelets kanter ------------------
   // Gradienten er bakt inn i bildet (applyPanelShade), så vi trenger ikke
-  // matche noen ramme. Vi projiserer bare front-panelets venstre og høyre
-  // kant (rene loddrette linjer -- ingen bue-problematikk) til stage-piksler,
-  // så HTML-teksten kan ankres til den EKTE geometrien: --panel-left/-w.
+  // matche noen ramme. Vi projiserer front-panelets venstre/høyre kant (rene
+  // loddrette linjer) + topp/bunn ved hjørne-nivået, så HTML-teksten kan
+  // ankres til den EKTE geometrien: --panel-left/-w/-top/-h.
   const _v = new THREE.Vector3()
   function updateTextAnchor() {
     const w = stage.clientWidth, h = stage.clientHeight
     if (!w || !h) return
     camera.updateMatrixWorld()
     const halfArc = CONFIG.panelArc / 2
-    const project = (th) => {
-      _v.set(CONFIG.radius * Math.sin(th), 0, CONFIG.radius * Math.cos(th)).project(camera)
-      return (_v.x * 0.5 + 0.5) * w
-    }
-    const leftPx = project(-halfArc)
-    const rightPx = project(halfArc)
+    const halfH = panelH / 2
+    const px = (x, y, z) => { _v.set(x, y, z).project(camera); return [(_v.x * 0.5 + 0.5) * w, (-_v.y * 0.5 + 0.5) * h] }
+    const [leftPx] = px(CONFIG.radius * Math.sin(-halfArc), 0, CONFIG.radius * Math.cos(-halfArc))
+    const [rightPx] = px(CONFIG.radius * Math.sin(halfArc), 0, CONFIG.radius * Math.cos(halfArc))
+    // Topp/bunn ved hjørnet (theta = -halfArc) -- der panelet er "lavest" oppe
+    // og "høyest" nede, dvs. den trygge indre boksen for teksten.
+    const cx = CONFIG.radius * Math.sin(-halfArc), cz = CONFIG.radius * Math.cos(-halfArc)
+    const [, topPy] = px(cx, halfH, cz)
+    const [, botPy] = px(cx, -halfH, cz)
     stage.style.setProperty('--panel-left', leftPx + 'px')
     stage.style.setProperty('--panel-w', (rightPx - leftPx) + 'px')
+    stage.style.setProperty('--panel-top', topPy + 'px')
+    stage.style.setProperty('--panel-h', (botPy - topPy) + 'px')
   }
 
   // ---- Kamera-avstand ------------------------------------------------
@@ -159,12 +165,17 @@ export function initCarousel(canvas) {
   // Portrett/mobil: høyden binder (heroWidthFrac ville skjøvet kamera så
   // langt bak at heroen forsvant i tåka). Tåka forankres til kamera-
   // avstanden etterpå, så heroen alltid ligger klar av den.
-  function fitCamera(viewportAspect) {
+  function fitCamera(viewportAspect, stageW) {
     const vFov = THREE.MathUtils.degToRad(CONFIG.fov)
     const hFov = 2 * Math.atan(Math.tan(vFov / 2) * viewportAspect)
     const frontZ = CONFIG.radius * Math.cos(CONFIG.panelArc / 2)
 
-    const wFrac = viewportAspect >= 1 ? CONFIG.heroWidthFrac : CONFIG.heroWidthFracPortrait
+    // Landskap: panel-bredden følger samme regel som det gamle hero-kortet --
+    // min(maks-px, viewport - margin) -> teksten (fast bredde) får alltid plass,
+    // og den "skalerer" identisk med den gamle visningen. Portrett: høyden binder.
+    const wFrac = viewportAspect >= 1
+      ? Math.min(CONFIG.heroMaxWidthPx, stageW - CONFIG.heroSideMarginPx) / stageW
+      : CONFIG.heroWidthFracPortrait
     const distW = ((chord / 2) / wFrac) / Math.tan(hFov / 2)
     const distH = ((panelH / 2) / CONFIG.heroHeightFrac) / Math.tan(vFov / 2)
     const dist = Math.max(distW, distH)
@@ -285,7 +296,7 @@ export function initCarousel(canvas) {
     renderer.setPixelRatio(Math.min(devicePixelRatio, 2))
     renderer.setSize(w, h, false)
     camera.aspect = w / h
-    fitCamera(w / h)
+    fitCamera(w / h, w)
     camera.updateProjectionMatrix()
     updateTextAnchor()
     render()
