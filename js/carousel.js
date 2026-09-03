@@ -23,9 +23,10 @@ const CONFIG = {
   heroWidthFracPortrait: 1.35, // portrett: la heroen blø litt ut i bredden -> mer høyde, senter-beskåret
   heroHeightFrac: 0.94,      // heroen skal aldri bli høyere enn så mye av lerretet
   fov: 35,
-  cornerRadius: 0.06,        // avrundede hjørner, som andel av panelhøyden (matcher --frame border-radius)
+  cornerRadius: 0.045,       // avrundede hjørner på bildet, andel av panelhøyden
   bg: 0xfdf6ec,              // = --cream (tåke + clear color)
-  frameInsetPx: 2,           // krymp DOM-rammen så mange px inn fra panel-omrisset
+  frameInsetPx: 6,           // krymp DOM-rammen så mange px inn fra panel-omrisset
+                             // (så gradienten aldri renner utenfor bildekanten)
   swipePx: 45,               // dra så langt (px) for å bla ett steg
   dragGive: 0.0018,          // rad per px "etter" mens man drar under terskelen
   dragGiveMax: 0.06,         // ...men aldri mer enn dette (~3,5°) -- holder glipa lukket
