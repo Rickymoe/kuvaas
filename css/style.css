@@ -195,7 +195,9 @@ img { max-width: 100%; display: block; }
 .carousel-stage {
   position: relative;
   width: 100%;
-  height: clamp(460px, 46vw, 580px);
+  /* min(..., 88vh): en mobil i landskap (bred nok til desktop-3D, men lav
+     skjerm) skal ikke få en hero høyere enn skjermen. */
+  height: min(clamp(460px, 46vw, 580px), 88vh);
   overflow: hidden;
   touch-action: pan-y;   /* horisontal sveip -> karusell, vertikal -> scroll */
   /* Fallback-verdier til carousel.js har projisert de ekte. */
