@@ -157,13 +157,13 @@ export async function initCarousel(canvas) {
       behavior: 'smooth', inline: 'center', block: 'nearest',
     })
 
-    // Hvilken slide er nærmest midten -> aktiv prikk + caption. Rett på scroll
-    // (ingen debounce -- goCaption ignorerer uendret slot), fungerer overalt.
+    // Hvilken slide er nærmest midten -> aktiv prikk + caption byttes RETT
+    // (ingen fade på mobil -- teksten skal føles festet til bildene mens de sklir).
     let scrollIdx = 0
     strip.addEventListener('scroll', () => {
       const i = Math.max(0, Math.min(slides.length - 1,
         Math.round(strip.scrollLeft / strip.clientWidth)))
-      if (i !== scrollIdx) { scrollIdx = i; goCaption(i) }
+      if (i !== scrollIdx) { scrollIdx = i; setCurrentSlot(i) }
     }, { passive: true })
 
     if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') {
