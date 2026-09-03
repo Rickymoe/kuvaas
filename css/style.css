@@ -327,9 +327,9 @@ html:not(.js) .hero-poster img,
     justify-content: flex-end;
   }
   .hero-content h1 { font-size: var(--text-2xl); }
-  .carousel-nav { width: 38px; height: 38px; top: 42%; }
-  .carousel-nav--prev { left: 10px; }
-  .carousel-nav--next { right: 10px; }
+  /* Mobil: panelet er kant-i-kant, så pilene ville ligge oppå teksten.
+     Skjul dem -- sveip gjør jobben (carousel.js swipePx). */
+  .carousel-nav { display: none; }
 }
 @media (prefers-reduced-motion: reduce) {
   .carousel-nav { transition: none; }
