@@ -245,18 +245,14 @@ img { max-width: 100%; display: block; }
   inset: 0;
   pointer-events: none;
   background: linear-gradient(100deg,
-    rgba(38,28,19,.92) 0%,
+    rgba(38,28,19,0) 0%,
+    rgba(38,28,19,.90) 3%,
     rgba(38,28,19,.66) 34%,
     rgba(38,28,19,.24) 58%,
     rgba(38,28,19,0) 78%);
-}
-.hero-frame::after {           /* tynn lys innerkant -- definerer skjermen */
-  content: "";
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  border-radius: inherit;
-  box-shadow: inset 0 0 0 1px rgba(253,246,236,.16);
+  /* Venstre kant fjæret via 0%->3%-stoppene over, så gradienten aldri hard-
+     starter mot en glipe. Topp/bunn dekkes av at fronten er nesten flat
+     (panelArc) + at rammen trekkes inn (frameInsetPx). */
 }
 
 .hero-content {
@@ -312,7 +308,6 @@ img { max-width: 100%; display: block; }
       rgba(38,28,19,.55) 64%,
       rgba(38,28,19,.88) 100%);
   }
-  .hero-frame::after { box-shadow: none; }
   .hero-content {
     justify-content: flex-end;
     padding: 20px 20px clamp(24px, 8vw, 52px);

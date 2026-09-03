@@ -17,7 +17,7 @@ import * as THREE from 'three'
 const CONFIG = {
   radius: 3.9,               // løkkas radius
   slotArc: Math.PI / 2,      // 4 slots, 90 grader mellom hvert bildesenter
-  panelArc: THREE.MathUtils.degToRad(46), // hvert bilde spenner 46 grader -> front leser nesten flatt
+  panelArc: THREE.MathUtils.degToRad(38), // hvert bilde spenner 38 grader -> fronten leser flatt, sidene fortsatt synlige
   aspect: 2560 / 1213,       // kildebildets bredde/høyde
   heroWidthFrac: 0.74,       // landskap: front-bildet fyller så mye av lerretsbredden
   heroWidthFracPortrait: 1.35, // portrett: la heroen blø litt ut i bredden -> mer høyde, senter-beskåret
@@ -25,8 +25,9 @@ const CONFIG = {
   fov: 35,
   cornerRadius: 0.045,       // avrundede hjørner på bildet, andel av panelhøyden
   bg: 0xfdf6ec,              // = --cream (tåke + clear color)
-  frameInsetPx: 6,           // krymp DOM-rammen så mange px inn fra panel-omrisset
-                             // (så gradienten aldri renner utenfor bildekanten)
+  frameInsetXPx: 2,          // krymp rammen inn fra panel-omrisset i bredden (nesten null)
+  frameInsetYPx: 13,         // ...og mer i høyden -- absorberer front-panelets svake "buk"
+                             //    så rammens rette topp/bunn-kant holder seg på bildet
   swipePx: 45,               // dra så langt (px) for å bla ett steg
   dragGive: 0.0018,          // rad per px "etter" mens man drar under terskelen
   dragGiveMax: 0.06,         // ...men aldri mer enn dette (~3,5°) -- holder glipa lukket
@@ -151,11 +152,11 @@ export function initCarousel(canvas) {
         if (py > maxY) maxY = py
       }
     }
-    const inset = CONFIG.frameInsetPx
-    stage.style.setProperty('--frame-x', (minX + inset) + 'px')
-    stage.style.setProperty('--frame-y', (minY + inset) + 'px')
-    stage.style.setProperty('--frame-w', (maxX - minX - inset * 2) + 'px')
-    stage.style.setProperty('--frame-h', (maxY - minY - inset * 2) + 'px')
+    const ix = CONFIG.frameInsetXPx, iy = CONFIG.frameInsetYPx
+    stage.style.setProperty('--frame-x', (minX + ix) + 'px')
+    stage.style.setProperty('--frame-y', (minY + iy) + 'px')
+    stage.style.setProperty('--frame-w', (maxX - minX - ix * 2) + 'px')
+    stage.style.setProperty('--frame-h', (maxY - minY - iy * 2) + 'px')
   }
 
   // ---- Kamera-avstand ------------------------------------------------
