@@ -401,7 +401,7 @@ html:not(.js) .hero-poster img,
 
 /* Gjelder BARE no-JS (med JS styrer .is-mobile over). Grensa settes egentlig
    av CONFIG.mobileMaxPx i js/carousel.js -- hold dette tallet i sync med den. */
-@media (max-width: 640px) {
+@media (max-width: 950px) {
   .carousel-stage { height: 72vh; min-height: 460px; }
   .hero-poster::after {
     background: linear-gradient(178deg,

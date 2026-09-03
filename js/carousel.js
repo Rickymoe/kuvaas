@@ -46,7 +46,7 @@ const CONFIG = {
 
   // >>> GRENSA mobil / desktop. Endre dette tallet for å flytte den. <<<
   // (Hold @media-verdien i css/style.css i sync -- den gjelder bare no-JS.)
-  mobileMaxPx: 640,
+  mobileMaxPx: 950,
 }
 CONFIG.mobileQuery = `(max-width: ${CONFIG.mobileMaxPx}px)`
 
