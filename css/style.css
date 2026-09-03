@@ -201,8 +201,8 @@ img { max-width: 100%; display: block; }
   /* Fallback-verdier til carousel.js har projisert de ekte. */
   --panel-left: max(24px, calc(50vw - 560px));
   --panel-w: min(1120px, calc(100vw - 48px));
-  --panel-top: 6%;
-  --panel-h: 88%;
+  --panel-top: 4%;
+  --panel-h: 90%;
 }
 #carousel-canvas {
   position: absolute;

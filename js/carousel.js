@@ -201,7 +201,9 @@ export function initCarousel(canvas) {
 
   // ---- Rotasjonstilstand ---------------------------------------------
   let targetAngle = 0
-  let renderAngle = reduced ? 0 : 0.32   // liten overrotasjon som "setter seg" ved oppstart
+  // Ingen overrotasjon ved start: panelet skal ligge PRESIST oppå .hero-fallback
+  // så krysstoningen fallback -> canvas blir usynlig. Bare opacity fader inn.
+  let renderAngle = 0
   let opacity = reduced ? 1 : 0
   let idle = true
   let ready = false
