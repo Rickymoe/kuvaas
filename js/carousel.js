@@ -239,18 +239,46 @@ export function initCarousel(canvas) {
     if (capEls.lead && c.lead != null) capEls.lead.textContent = c.lead
   }
 
-  // Kalles fra step()/sveip. Fade UT nå (CSS .is-turning), så -- etter en fast
-  // tid, uavhengig av rotasjonshastigheten -- bytt tekst mens den er usynlig og
-  // fjern klassen så CSS fader den INN igjen.
+  // ---- Prikker (bla-indikator) -------------------------------------
+  // Viser hvor mange bilder karusellen har + hvilket man er på. Tappbare.
+  const dotWrap = document.createElement('div')
+  dotWrap.className = 'carousel-dots'
+  const dots = SLOTS.map((s, i) => {
+    if (!s.image) return null
+    const b = document.createElement('button')
+    b.type = 'button'
+    b.className = 'carousel-dot'
+    b.setAttribute('aria-label', `Bilde ${i + 1}`)
+    b.addEventListener('click', () => goToSlot(i))
+    dotWrap.appendChild(b)
+    return b
+  })
+  if (dots.filter(Boolean).length > 1) stage.appendChild(dotWrap)
+
+  function setCurrentSlot(i) {
+    currentSlot = i
+    applyCaption(i)
+    dots.forEach((d, k) => {
+      if (!d) return
+      d.classList.toggle('is-active', k === i)
+      if (k === i) d.setAttribute('aria-current', 'true')
+      else d.removeAttribute('aria-current')
+    })
+  }
+  setCurrentSlot(0)
+
+  // Kalles fra step()/sveip/prikk. Fade UT teksten nå (CSS .is-turning), så --
+  // etter en fast tid, uavhengig av rotasjonshastigheten -- bytt tekst + aktiv
+  // prikk mens teksten er usynlig, og fjern klassen så CSS fader den INN igjen.
   function beginTurn() {
     const dest = slotAt(targetAngle)
     if (dest === currentSlot) return
-    if (reduced) { currentSlot = dest; applyCaption(dest); return }
+    if (reduced) { setCurrentSlot(dest); return }
     stage.classList.add('is-turning')
     clearTimeout(capTimer)
     capTimer = setTimeout(() => {
       const d = slotAt(targetAngle)   // kan ha endret seg hvis man blar igjen
-      if (d !== currentSlot) { currentSlot = d; applyCaption(d) }
+      if (d !== currentSlot) setCurrentSlot(d)
       stage.classList.remove('is-turning')
     }, CONFIG.captionOutMs)
   }
@@ -276,6 +304,15 @@ export function initCarousel(canvas) {
       if (Math.abs(snapped - a) < 1e-3) { targetAngle = snapped; beginTurn(); wake(); return }
     }
     targetAngle = nearestFilled(a); beginTurn(); wake()
+  }
+
+  // Roter til en bestemt slot (prikk-klikk), korteste vei.
+  function goToSlot(i) {
+    if (i === currentSlot) return
+    const base = -SLOTS[i].angle
+    targetAngle = base + Math.round((targetAngle - base) / (2 * Math.PI)) * 2 * Math.PI
+    beginTurn()
+    wake()
   }
 
   // ---- Interaksjon ---------------------------------------------------

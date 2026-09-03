@@ -310,6 +310,30 @@ html:not(.js) .hero-poster img,
 .carousel-nav:hover { background: var(--cream); transform: translateY(-50%) scale(1.06); }
 .carousel-nav:active { transform: translateY(-50%) scale(0.96); }
 
+/* Prikker -- "det er flere bilder her" + hvilket du er på. Nederst på panelet. */
+.carousel-dots {
+  position: absolute;
+  z-index: 4;
+  left: max(20px, calc(var(--panel-left) + clamp(20px, 3vw, 56px)));
+  top: calc(var(--panel-top) + var(--panel-h) - 34px);
+  display: flex;
+  gap: 9px;
+}
+.carousel-dot {
+  width: 8px; height: 8px;
+  padding: 0;
+  border: none;
+  border-radius: 100px;
+  background: rgba(253,246,236,.45);
+  box-shadow: 0 1px 4px rgba(38,28,19,.35);
+  cursor: pointer;
+  transition: width .25s ease, background .25s ease;
+}
+.carousel-dot.is-active { width: 22px; background: var(--cream); }
+@media (hover: hover) {
+  .carousel-dot:hover { background: rgba(253,246,236,.8); }
+}
+
 @media (max-width: 640px) {
   .carousel-stage { height: 72vh; min-height: 460px; }
   .hero-poster::after {       /* bunn-tung på mobil -- teksten står nede */
@@ -321,12 +345,16 @@ html:not(.js) .hero-poster img,
   }
   .hero-content {
     left: 20px; right: 20px;
-    top: auto; bottom: clamp(26px, 8vw, 52px);
+    top: auto; bottom: clamp(46px, 13vw, 74px);   /* plass til prikkene under */
     height: auto;
     max-width: none;
     justify-content: flex-end;
   }
   .hero-content h1 { font-size: var(--text-2xl); }
+  .carousel-dots {                                /* midtstilt nederst på mobil */
+    left: 50%; transform: translateX(-50%);
+    top: auto; bottom: 18px;
+  }
   /* Mobil: panelet er kant-i-kant, så pilene ville ligge oppå teksten.
      Skjul dem -- sveip gjør jobben (carousel.js swipePx). */
   .carousel-nav { display: none; }
