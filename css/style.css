@@ -240,14 +240,19 @@ img { max-width: 100%; display: block; }
 }
 .carousel-stage.is-ready .hero-fallback-scrim { opacity: 0; }
 
-/* Teksten -- ankret til front-panelets venstre kant + vertikale senter.
-   Fast max-width (som det gamle hero-kortet) -> h1 skalerer identisk. */
+/* Teksten -- boksen dekker panelets trygge indre boks (topp/høyde ved
+   hjørne-nivået), teksten sentreres i den -> kan aldri havne over/under det
+   buede bildet. Fast max-width (som det gamle hero-kortet) -> h1 skalerer
+   identisk. */
 .hero-content {
   position: absolute;
   z-index: 3;
   left: calc(var(--panel-left) + clamp(20px, 3vw, 56px));
-  top: calc(var(--panel-top) + var(--panel-h) / 2);
-  transform: translateY(-50%);
+  top: var(--panel-top);
+  height: var(--panel-h);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
   max-width: 33rem;
 }
 .hero-content .eyebrow,
@@ -292,8 +297,9 @@ img { max-width: 100%; display: block; }
   .hero-content {
     left: 20px; right: 20px;
     top: auto; bottom: clamp(26px, 8vw, 52px);
-    transform: none;
-    width: auto;
+    height: auto;
+    max-width: none;
+    justify-content: flex-end;
   }
   .hero-content h1 { font-size: var(--text-2xl); }
   .carousel-nav { width: 38px; height: 38px; top: 42%; }

@@ -32,10 +32,10 @@ const CONFIG = {
   // så den ligger alltid presist på det uansett bue/skjermbredde. Venstretung
   // (for desktop-teksten) + ekstra mot bunn (for mobil-teksten nede).
   shadeColor: [0.09, 0.065, 0.045],  // mørkningsfarge (nær brun-svart)
-  shadeLeftStart: 0.04,      // uv.x der venstre-mørkningen er på topp
-  shadeLeftEnd: 0.60,        // uv.x der den er borte
-  shadeBottomBoost: 0.5,     // ekstra mørkning mot bunnen (bl.a. for mobil-tekst nede)
-  shadeMax: 0.90,            // tak på total mørkning
+  shadeLeftEnd: 0.92,       // uv.x der venstre-mørkningen når null
+  shadeLeftFalloff: 1.15,   // eksponent på avtaket (< 1 = holder mørk lenger)
+  shadeBottomBoost: 0.5,    // ekstra mørkning mot bunnen (bl.a. for mobil-tekst nede)
+  shadeMax: 0.90,           // tak på total mørkning
 
   swipePx: 45,               // dra så langt (px) for å bla ett steg
   dragGive: 0.0018,          // rad per px "etter" mens man drar under terskelen
@@ -334,8 +334,12 @@ function applyPanelShade(mat) {
       '#include <map_fragment>',
       `#include <map_fragment>
       {
-        float leftDark = smoothstep(${f(CONFIG.shadeLeftEnd)}, ${f(CONFIG.shadeLeftStart)}, vMapUv.x);
-        float botDark = smoothstep(0.55, 0.0, vMapUv.y) * ${f(CONFIG.shadeBottomBoost)};
+        // Venstretung: holder seg mørk lenger utover (som den gamle 100deg-
+        // gradienten) i stedet for å falle raskt av -- så hele tekstblokka,
+        // også høyre ende av h1, ligger på mørk grunn.
+        float lx = clamp(vMapUv.x / ${f(CONFIG.shadeLeftEnd)}, 0.0, 1.0);
+        float leftDark = ${f(CONFIG.shadeMax)} * pow(1.0 - lx, ${f(CONFIG.shadeLeftFalloff)});
+        float botDark = smoothstep(0.58, 0.0, vMapUv.y) * ${f(CONFIG.shadeBottomBoost)};
         float d = min(${f(CONFIG.shadeMax)}, leftDark + botDark);
         diffuseColor.rgb = mix(diffuseColor.rgb, vec3(${f(dr)}, ${f(dg)}, ${f(db)}), d);
       }`
