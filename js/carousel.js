@@ -17,23 +17,15 @@ import * as THREE from 'three'
 const CONFIG = {
   radius: 3.9,               // løkkas radius
   slotArc: Math.PI / 2,      // 4 slots, 90 grader mellom hvert bildesenter
-  panelArc: THREE.MathUtils.degToRad(60), // hvert bilde spenner 60 grader -> 30 grader luft i skjøten
+  panelArc: THREE.MathUtils.degToRad(46), // hvert bilde spenner 46 grader -> front leser nesten flatt
   aspect: 2560 / 1213,       // kildebildets bredde/høyde
   heroWidthFrac: 0.74,       // landskap: front-bildet fyller så mye av lerretsbredden
   heroWidthFracPortrait: 1.35, // portrett: la heroen blø litt ut i bredden -> mer høyde, senter-beskåret
   heroHeightFrac: 0.94,      // heroen skal aldri bli høyere enn så mye av lerretet
   fov: 35,
-  cornerRadius: 0.07,        // avrundede hjørner, som andel av panelhøyden
+  cornerRadius: 0.06,        // avrundede hjørner, som andel av panelhøyden (matcher --frame border-radius)
   bg: 0xfdf6ec,              // = --cream (tåke + clear color)
-
-  // Fast "skjerm" foran trommelen -- roterer IKKE. Bærer den mørke gradienten
-  // og rammer hero-bildet; HTML-teksten ligger oppå. Trommelen blar bak den,
-  // og B1/B3 stikker ut til sidene for skjermen.
-  screenWidthFrac: 0.97,     // skjermen litt smalere enn front-panelet -> bildet blør ut i kanten
-  screenHeightFrac: 0.93,    // ...og litt lavere -> bildet fyller rammen topp til bunn
-  screenFlatten: 2.4,        // > 1 = flatere bue enn trommelen (større radius)
-  screenGap: 0.14,           // hvor langt (world units) foran trommel-fronten
-  screenCornerPx: 40,        // hjørneradius i skjerm-teksturens piksler
+  frameInsetPx: 2,           // krymp DOM-rammen så mange px inn fra panel-omrisset
   swipePx: 45,               // dra så langt (px) for å bla ett steg
   dragGive: 0.0018,          // rad per px "etter" mens man drar under terskelen
   dragGiveMax: 0.06,         // ...men aldri mer enn dette (~3,5°) -- holder glipa lukket
@@ -130,27 +122,40 @@ export function initCarousel(canvas) {
   shadow.position.z = CONFIG.radius * 0.15
   scene.add(shadow)
 
-  // ---- Fast skjerm (roterer ikke) ------------------------------------
-  // Ligger like foran trommel-fronten, litt flatere bue. Gradient-tekstur:
-  // mørk til venstre (for teksten), gjennomsiktig til høyre (bildet skinner
-  // gjennom). Legges i scene, ikke i loop -- så den står bom stille når man blar.
-  const screenChord = chord * CONFIG.screenWidthFrac
-  const screenRadius = CONFIG.radius * CONFIG.screenFlatten
-  const screenArc = 2 * Math.asin(Math.min(1, screenChord / 2 / screenRadius))
-  const screenGeo = new THREE.CylinderGeometry(
-    screenRadius, screenRadius, panelH * CONFIG.screenHeightFrac,
-    48, 1, true, -screenArc / 2, screenArc
-  )
-  const screenTex = makeScreenTexture(CONFIG.screenCornerPx)
-  const screen = new THREE.Mesh(screenGeo, new THREE.MeshBasicMaterial({
-    map: screenTex, transparent: true, depthWrite: false,
-    side: THREE.DoubleSide, toneMapped: false,
-  }))
-  // Sylinderens fremste punkt er i z = screenRadius; skyv den slik at flaten
-  // havner rett foran trommel-fronten (z = radius + gap).
-  screen.position.z = (CONFIG.radius + CONFIG.screenGap) - screenRadius
-  screen.renderOrder = 5
-  scene.add(screen)
+  // ---- Fast ramme: projiser front-panelets omriss til stage-piksler ---
+  // Den faste "skjermen" er nå et DOM-element (.hero-frame) som bærer
+  // gradienten + teksten. Her regner vi ut hvor front-panelet faktisk havner
+  // på skjermen og skriver det som CSS-variabler -- så DOM-rammen ankrer seg
+  // til den EKTE geometrien, riktig på alle skjermbredder (ingen vw-gjetting).
+  const _v = new THREE.Vector3()
+  function updateFrameVars() {
+    const w = stage.clientWidth, h = stage.clientHeight
+    if (!w || !h) return
+    camera.updateMatrixWorld()
+    const halfArc = CONFIG.panelArc / 2
+    const halfH = panelH / 2
+    let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity
+    // Sampl topp- og bunnkanten på tvers av bue (fanger "buk"-en ved theta=0).
+    for (let i = 0; i <= 8; i++) {
+      const th = -halfArc + (i / 8) * CONFIG.panelArc
+      const x = CONFIG.radius * Math.sin(th)
+      const z = CONFIG.radius * Math.cos(th)
+      for (const y of [-halfH, halfH]) {
+        _v.set(x, y, z).project(camera)
+        const px = (_v.x * 0.5 + 0.5) * w
+        const py = (-_v.y * 0.5 + 0.5) * h
+        if (px < minX) minX = px
+        if (px > maxX) maxX = px
+        if (py < minY) minY = py
+        if (py > maxY) maxY = py
+      }
+    }
+    const inset = CONFIG.frameInsetPx
+    stage.style.setProperty('--frame-x', (minX + inset) + 'px')
+    stage.style.setProperty('--frame-y', (minY + inset) + 'px')
+    stage.style.setProperty('--frame-w', (maxX - minX - inset * 2) + 'px')
+    stage.style.setProperty('--frame-h', (maxY - minY - inset * 2) + 'px')
+  }
 
   // ---- Kamera-avstand ------------------------------------------------
   // Landskap: bredden binder (heroen fyller ~heroWidthFrac av lerretet).
@@ -273,7 +278,6 @@ export function initCarousel(canvas) {
     loop.rotation.y = renderAngle
     for (const p of panels) p.material.opacity = opacity
     shadow.material.opacity = 0.22 * opacity
-    screen.material.opacity = opacity
     renderer.render(scene, camera)
   }
 
@@ -286,6 +290,7 @@ export function initCarousel(canvas) {
     camera.aspect = w / h
     fitCamera(w / h)
     camera.updateProjectionMatrix()
+    updateFrameVars()
     render()
   }
   const ro = new ResizeObserver(resize)
@@ -306,35 +311,6 @@ export function initCarousel(canvas) {
     window.__cx = api
   }
   return api
-}
-
-// Fast skjerm: avrundet rektangel-klipp, venstretung mørk gradient (mørk ->
-// gjennomsiktig), tynn lys innerkant. Bildet skinner gjennom høyre halvdel.
-function makeScreenTexture(cornerPx) {
-  const w = 1024, h = 560
-  const c = document.createElement('canvas')
-  c.width = w; c.height = h
-  const g = c.getContext('2d')
-  g.save()
-  g.beginPath()
-  g.roundRect(2, 2, w - 4, h - 4, cornerPx)
-  g.clip()
-  const grad = g.createLinearGradient(0, 0, w, 0)
-  grad.addColorStop(0.00, 'rgba(38,28,19,0.92)')
-  grad.addColorStop(0.40, 'rgba(38,28,19,0.66)')
-  grad.addColorStop(0.66, 'rgba(38,28,19,0.20)')
-  grad.addColorStop(0.84, 'rgba(38,28,19,0)')
-  g.fillStyle = grad
-  g.fillRect(0, 0, w, h)
-  g.restore()
-  g.strokeStyle = 'rgba(253,246,236,0.20)'
-  g.lineWidth = 2
-  g.beginPath()
-  g.roundRect(3, 3, w - 6, h - 6, cornerPx - 1)
-  g.stroke()
-  const t = new THREE.CanvasTexture(c)
-  t.colorSpace = THREE.SRGBColorSpace
-  return t
 }
 
 // Hvit avrundet rektangel på svart -- brukes som alphaMap (grønn kanal).

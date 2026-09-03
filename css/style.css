@@ -183,11 +183,14 @@ img { max-width: 100%; display: block; }
 }
 
 /* ===== Hero -- buet 3D-bildekarusell (js/carousel.js) =====
-   Fullbreddes cream-scene med et buet fotopanel som "leser flatt" foran og
-   krummer bort til sidene. Teksten ligger venstrestilt oppå, over en mørk
-   scrim (samme 100deg-vinkel som den gamle hero-gradienten). .hero-fallback
-   er statisk <img> som vises til carousel.js melder .is-ready -- og blir
-   stående ved manglende JS/WebGL. */
+   Fullbreddes cream-scene med et buet fotopanel som leser nesten flatt foran
+   og krummer bort til sidene. Foran ligger en fast "skjerm" (.hero-frame) som
+   bærer gradienten + teksten -- den ankres til front-panelets FAKTISKE
+   projiserte omriss via CSS-variablene --frame-x/y/w/h som carousel.js setter
+   ved hver resize. Ingen vw-gjetting -> riktig på alle skjermbredder.
+   .hero-fallback = statisk <img> til carousel.js melder .is-ready, og blir
+   stående ved manglende JS/WebGL (rammens fallback-verdier under gjør at
+   .hero-frame rammer den også da). */
 .hero { padding-block: 0; }
 
 .carousel-stage {
@@ -196,6 +199,11 @@ img { max-width: 100%; display: block; }
   height: clamp(430px, 44vw, 580px);
   overflow: hidden;
   touch-action: pan-y;   /* horisontal sveip -> karusell, vertikal -> scroll */
+  /* Fallback til carousel.js har regnet ut de ekte verdiene. */
+  --frame-x: 9vw;
+  --frame-y: 7%;
+  --frame-w: 82vw;
+  --frame-h: 84%;
 }
 #carousel-canvas {
   position: absolute;
@@ -217,36 +225,53 @@ img { max-width: 100%; display: block; }
 }
 .carousel-stage.is-ready .hero-fallback { opacity: 0; }
 
-/* DOM-scrim: kun for fallback (ingen JS/WebGL). Når karusellen er klar, tar
-   den faste WebGL-skjermen over gradienten og denne fades ut. */
-.hero-scrim {
+/* Den faste "skjermen" -- posisjon fra --frame-* (front-panelets omriss). */
+.hero-frame {
+  position: absolute;
+  left: var(--frame-x);
+  top: var(--frame-y);
+  width: var(--frame-w);
+  height: var(--frame-h);
+  z-index: 2;
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 0 26px 64px -28px rgba(74,59,42,.45);
+}
+.hero-frame::before {          /* gradienten for tekst-lesbarhet */
+  content: "";
   position: absolute;
   inset: 0;
-  z-index: 2;
   pointer-events: none;
-  transition: opacity .5s ease .15s;
   background: linear-gradient(100deg,
-    rgba(74,59,42,.82) 0%,
-    rgba(74,59,42,.48) 24%,
-    rgba(74,59,42,.14) 46%,
-    rgba(74,59,42,0) 62%);
+    rgba(38,28,19,.92) 0%,
+    rgba(38,28,19,.66) 34%,
+    rgba(38,28,19,.24) 58%,
+    rgba(38,28,19,0) 78%);
 }
-.carousel-stage.is-ready .hero-scrim { opacity: 0; }
-/* Teksten sitter på den faste skjermen -- venstre-tredjedelen, der WebGL-
-   skjermens gradient er mørkest. left ~ skjermens venstre kant (skjermen er
-   sentrert og ~71% av bredden -> kanten ligger rundt 15vw). */
-.hero-content {
+.hero-frame::after {           /* tynn lys innerkant -- definerer skjermen */
+  content: "";
   position: absolute;
-  z-index: 3;
-  left: max(20px, 16vw);
-  top: 50%;
-  transform: translateY(-50%);
-  max-width: min(34rem, 58vw);
+  inset: 0;
+  pointer-events: none;
+  border-radius: inherit;
+  box-shadow: inset 0 0 0 1px rgba(253,246,236,.16);
+}
+
+.hero-content {
+  position: relative;
+  z-index: 1;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-start;
+  padding: clamp(1.4rem, 3.4vw, 3rem);
+  max-width: 34rem;
 }
 /* Litt skygge bak teksten -- lar gradienten være lettere uten å ofre lesbarhet. */
 .hero-content .eyebrow,
 .hero-content h1,
-.hero-content .lead { text-shadow: 0 1px 16px rgba(43,32,22,.55); }
+.hero-content .lead { text-shadow: 0 1px 16px rgba(43,32,22,.5); }
 
 /* Pil-knapper (portet fra X-serien) */
 .carousel-nav {
@@ -275,24 +300,25 @@ img { max-width: 100%; display: block; }
 
 @media (max-width: 640px) {
   .carousel-stage { height: 84vh; min-height: 520px; }
-  .hero-scrim {
+  .hero-frame { border-radius: 0; box-shadow: none; }
+  .hero-frame::before {          /* bunn-tung på mobil -- teksten står nede */
     background: linear-gradient(178deg,
-      rgba(74,59,42,.34) 0%,
-      rgba(74,59,42,.12) 34%,
-      rgba(74,59,42,.52) 66%,
-      rgba(74,59,42,.86) 100%);
+      rgba(38,28,19,.30) 0%,
+      rgba(38,28,19,.12) 32%,
+      rgba(38,28,19,.55) 64%,
+      rgba(38,28,19,.88) 100%);
   }
+  .hero-frame::after { box-shadow: none; }
   .hero-content {
-    left: 20px; right: 20px;
-    top: auto; bottom: clamp(28px, 9vw, 60px);
-    transform: none;
+    justify-content: flex-end;
+    padding: 20px 20px clamp(24px, 8vw, 52px);
     max-width: none;
   }
   .carousel-nav { width: 38px; height: 38px; }
 }
 @media (prefers-reduced-motion: reduce) {
   .carousel-nav { transition: none; }
-  .hero-fallback, .hero-scrim { transition: none; }
+  .hero-fallback { transition: none; }
 }
 
 .hero .eyebrow { color: var(--cream-deep); }
