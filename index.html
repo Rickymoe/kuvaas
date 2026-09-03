@@ -13,6 +13,9 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/style.css">
+<!-- Start three.js-hentingen tidlig -> kortere fallback-blink før karusellen -->
+<link rel="preconnect" href="https://unpkg.com" crossorigin>
+<link rel="modulepreload" href="https://unpkg.com/three@0.165.0/build/three.module.js">
 </head>
 <body data-page="hjem">
 
@@ -21,14 +24,13 @@
 <section class="hero" aria-label="Bildekarusell">
   <div id="carousel-stage" class="carousel-stage">
     <canvas id="carousel-canvas" aria-hidden="true"></canvas>
-    <!-- Statisk fallback: vises til carousel.js legger .is-ready på stagen,
-         og blir stående ved manglende JS/WebGL (beholder alt-tekst + SEO). -->
-    <img class="hero-fallback" src="Bilder/havn-hero.jpg" alt="Småbåthavna i Holmestrand sentrum en solfylt høstdag" fetchpriority="high" width="2560" height="1213" />
-    <!-- Mørkningen bak teksten er bakt inn i selve karusell-bildet (shader,
-         js/carousel.js). .hero-fallback-scrim under dekker fallback-tilfellet
-         (ingen JS/WebGL). Teksten ankres til --panel-left/-w som carousel.js
-         setter fra front-panelets projiserte kanter. -->
-    <div class="hero-fallback-scrim" aria-hidden="true"></div>
+    <!-- Statisk fallback -- rammet + tonet som karusell-panelet (::after-scrim),
+         så overgangen når canvas kommer opp er sømløs. Vises til carousel.js
+         legger .is-ready på stagen; blir stående ved manglende JS/WebGL
+         (beholder alt-tekst + SEO). Ankret til --panel-* som carousel.js setter. -->
+    <div class="hero-fallback">
+      <img src="Bilder/havn-hero.jpg" alt="Småbåthavna i Holmestrand sentrum en solfylt høstdag" fetchpriority="high" width="2560" height="1213" />
+    </div>
     <!-- Ikke .reveal her: heroen er over folden og ligger inline i denne fila,
          så den skal være synlig fra første paint. Entré er en ren CSS-animasjon
          (.hero-content) -> ingen tekstløs blink mens carousel.js laster. -->
