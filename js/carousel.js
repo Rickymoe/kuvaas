@@ -38,6 +38,17 @@ const CONFIG = {
   shadeBottomBoost: 0.5,
   shadeMax: 0.90,
 
+  // Kameraets horisontale synsfelt (hFov) er avledet av vFov * aspect --
+  // uten tak vokser det ubegrenset på en veldig bred/lav stage, og avdekker
+  // stadig mer av løkkas krumme sidepaneler jo bredere vinduet blir (selve
+  // fronten holder seg pent innafor heroMaxWidthPx, men "hvor mye av siden
+  // du ser" gjorde ikke det). Over dette forholdet render'es scenen inn i en
+  // "pillarboxed" (smalere, sentrert) del av canvaset i stedet for full
+  // stage-bredde, så sidepanelene aldri tar mer plass enn ved dette
+  // forholdet. 2.2 valgt for å matche hvordan det så riktig ut på et vanlig
+  // (ikke ultrabredt) skjermvindu -- Ricky 2026-09-04.
+  maxViewportAspect: 2.2,
+
   swipePx: 45,               // desktop: dra så langt for å bla ett steg
   dragGive: 0.0018,
   dragGiveMax: 0.06,
@@ -256,14 +267,22 @@ export async function initCarousel(canvas) {
     shadow.position.z = CONFIG.radius * 0.15
     scene.add(shadow)
 
+    // Actual rendered (possibly pillarboxed, see CONFIG.maxViewportAspect)
+    // width and its left offset within the stage -- kept in sync by resize()
+    // and used both for the WebGL viewport and for mapping the camera's NDC
+    // space back to on-screen pixels (updateTextAnchor), so the HTML overlay
+    // (title, buttons, dots...) lines up with the canvas even when it's
+    // narrower than the stage.
+    let renderW = 0, renderOffsetX = 0
+
     const _v = new THREE.Vector3()
     function updateTextAnchor() {
-      const w = stage.clientWidth, h = stage.clientHeight
+      const w = renderW, h = stage.clientHeight
       if (!w || !h) return
       camera.updateMatrixWorld()
       const halfArc = CONFIG.panelArc / 2
       const halfH = panelH / 2
-      const px = (x, y, z) => { _v.set(x, y, z).project(camera); return [(_v.x * 0.5 + 0.5) * w, (-_v.y * 0.5 + 0.5) * h] }
+      const px = (x, y, z) => { _v.set(x, y, z).project(camera); return [renderOffsetX + (_v.x * 0.5 + 0.5) * w, (-_v.y * 0.5 + 0.5) * h] }
       const [leftPx] = px(CONFIG.radius * Math.sin(-halfArc), 0, CONFIG.radius * Math.cos(-halfArc))
       const [rightPx] = px(CONFIG.radius * Math.sin(halfArc), 0, CONFIG.radius * Math.cos(halfArc))
       const cx = CONFIG.radius * Math.sin(-halfArc), cz = CONFIG.radius * Math.cos(-halfArc)
@@ -394,10 +413,22 @@ export async function initCarousel(canvas) {
     function resize() {
       const w = stage.clientWidth
       const h = stage.clientHeight
+      if (!w || !h) return
+
+      // Pillarbox: past CONFIG.maxViewportAspect, render into a centered,
+      // capped-width slice of the canvas rather than the full stage width --
+      // extra width just becomes more cream margin (page background) either
+      // side, not more revealed side-panel.
+      renderW = Math.min(w, h * CONFIG.maxViewportAspect)
+      renderOffsetX = (w - renderW) / 2
+      cv.style.left  = renderOffsetX + 'px'
+      cv.style.width = renderW + 'px'
+      cv.style.right = 'auto'
+
       renderer.setPixelRatio(Math.min(devicePixelRatio, 2))
-      renderer.setSize(w, h, false)
-      camera.aspect = w / h
-      fitCamera(w / h, w)
+      renderer.setSize(renderW, h, false)
+      camera.aspect = renderW / h
+      fitCamera(renderW / h, renderW)
       camera.updateProjectionMatrix()
       updateTextAnchor()
       render()
