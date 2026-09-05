@@ -232,11 +232,11 @@ img { max-width: 100%; display: block; }
   pointer-events: none;
   border-radius: inherit;
   background: linear-gradient(to top right,
-    rgba(38,28,19,.82) 0%,
-    rgba(38,28,19,.60) 22%,
-    rgba(38,28,19,.36) 44%,
-    rgba(38,28,19,.14) 66%,
-    rgba(38,28,19,0) 86%);
+    rgba(38,28,19,.60) 0%,
+    rgba(38,28,19,.40) 24%,
+    rgba(38,28,19,.22) 48%,
+    rgba(38,28,19,.07) 70%,
+    rgba(38,28,19,0) 88%);
 }
 
 /* Poster -- hero-fotoet. Ligger bak stripa (z-index 0) og viser samme bilde;
@@ -421,7 +421,11 @@ img { max-width: 100%; display: block; }
 /* ===== About/trust grid (forside) ===== */
 .about-grid { display: grid; grid-template-columns: 380px 1fr; gap: var(--space-8); align-items: center; }
 .about-photo { width: 100%; border-radius: 20px; object-fit: cover; aspect-ratio: 4/3; display: block; }
-.about-text { position: relative; }
+/* isolation: isolate -> egen stacking-context UANSETT opacity. Uten den mister
+   .about-text konteksten sin i det .reveal-transitionen når opacity: 1, og
+   hjerte-vannmerket (z-index: -1) faller bak sidebakgrunnen og forsvinner --
+   det synes bare mens transitionen kjører (Ricky-rapport 2026-09-05). */
+.about-text { position: relative; isolation: isolate; }
 .about-text-heart {
   position: absolute; width: 260px; max-width: 60%;
   top: -30px; right: -20px; opacity: .08; z-index: -1; pointer-events: none;
