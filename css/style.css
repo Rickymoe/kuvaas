@@ -397,11 +397,18 @@ html:not(.js) .hero-poster img,
   .carousel-stage {
     height: min(76vh, 620px); min-height: 400px;
     touch-action: auto;              /* slipp native horisontal-scroll løs (var pan-y) */
+    background: var(--cream);        /* definert grunn mens strip-<img> laster kaldt */
   }
   .carousel-stage #carousel-canvas { display: none; }
   .carousel-stage .carousel-nav { display: none; }
-  /* Samme full-bleed-form som posteren fikk via JS før -- her ren CSS,
-     gjelder fra første paint, før JS rekker å kjøre. */
+  /* Posteren er desktop-broen mens Three.js laster. På mobil finnes ikke
+     Three.js -- strip-<img> vises like raskt -- og posterens opake cream-flate
+     (z-index 3) rakk bare å DEKKE et ferdig, ofte cachet strip-bilde i hele
+     .is-ready-vinduet og SÅ fade vekk = kort cream-blink ved refresh (Ricky
+     2026-09-05, bilde -> cream -> bilde). Skjul den når JS kjører; no-JS
+     beholder den (SEO / ingen strip). */
+  html.js .hero-poster { display: none; }
+  /* Full-bleed-form for no-JS-posteren (JS-posteren er skjult over). */
   .hero-poster {
     left: 0; top: 0; width: 100%; height: 100%;
     border-radius: 0; border: none;
