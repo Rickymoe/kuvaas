@@ -392,8 +392,12 @@ html:not(.js) .hero-poster img,
    Bevisst avveining: en evt. rotasjon som krysser 950px (i praksis kun
    nettbrett, ikke telefon) kan gi et kort tomrom mens JS bygger om -- langt
    bedre enn at feil modus vises fullt ferdig, som var det faktiske, gjentatte
-   problemet. */
-@media (max-width: 950px) {
+   problemet.
+
+   EKSPERIMENT 2026-09-05: desktop-karusellen er slått av (se DESKTOP_CAROUSEL
+   i js/carousel.js). Breakpointen står midlertidig på 100000px så mobil-
+   layouten gjelder ALLE bredder. Sett tilbake til 950px når 3D skrus på. */
+@media (max-width: 100000px) {
   .carousel-stage {
     height: min(76vh, 620px); min-height: 400px;
     touch-action: auto;              /* slipp native horisontal-scroll løs (var pan-y) */

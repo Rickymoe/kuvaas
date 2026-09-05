@@ -492,7 +492,18 @@ export async function initCarousel(canvas) {
   }
 
   // ================= Modusvelger + rebuild ved grensekryssing ===============
+  // EKSPERIMENT 2026-09-05: desktop-karusellen (three.js) er slått av -- den
+  // native scroll-snap-karusellen brukes på ALLE bredder. Sett tilbake til
+  // true for å skru på 3D-varianten igjen (mountDesktop + all koden under
+  // ligger urørt; import('three') kalles bare når denne er true).
+  // NB: CSS har en tilsvarende bryter -- @media-breakpointen i style.css er
+  // midlertidig satt vid nok til å dekke alt. Skru begge samtidig.
+  const DESKTOP_CAROUSEL = false
+
   const mq = matchMedia(CONFIG.mobileQuery)
+  const wantMode = () =>
+    forceMode || (!DESKTOP_CAROUSEL || mq.matches ? 'mobile' : 'desktop')
+
   let unmount = () => {}
   let curMode = null
   let gen = 0
@@ -521,8 +532,7 @@ export async function initCarousel(canvas) {
       // Compare against the SAME decision apply() would make right now, not
       // raw mq.matches -- otherwise a dev forceMode() override (which is
       // deliberately viewport-independent) would never pass this check.
-      const want = forceMode || (mq.matches ? 'mobile' : 'desktop')
-      if (want !== curMode) return
+      if (wantMode() !== curMode) return
     }
     stage.classList.add('is-ready')
   }
@@ -532,7 +542,7 @@ export async function initCarousel(canvas) {
   setTimeout(() => reveal(true), 4000)
 
   async function apply() {
-    const want = forceMode || (mq.matches ? 'mobile' : 'desktop')
+    const want = wantMode()
     if (want === curMode) { reveal(); return }
     const myGen = ++gen
     try { unmount() } catch (e) { /* nothing */ }
