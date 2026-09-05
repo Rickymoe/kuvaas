@@ -128,6 +128,22 @@ export function initCarousel(stage) {
   })
   dots.forEach((d, i) => d && d.addEventListener('click', () => goToIndex(i)))
 
+  // Pil-knapper + piltaster -- leser faktisk scroll-posisjon (ikke currentSlot,
+  // som kan henge etter en smooth-scroll), wrapper rundt endene.
+  const nav = (delta) => {
+    const cur = clamp(Math.round(strip.scrollLeft / strip.clientWidth), 0, slides.length - 1)
+    goToIndex((cur + delta + slides.length) % slides.length)
+  }
+  stage.querySelector('.carousel-nav--prev')?.addEventListener('click', () => nav(-1))
+  stage.querySelector('.carousel-nav--next')?.addEventListener('click', () => nav(1))
+  addEventListener('keydown', (e) => {
+    if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return
+    // ikke kapre piltastene når karusellen er scrollet ut av syne
+    const r = stage.getBoundingClientRect()
+    if (r.bottom < 0 || r.top > innerHeight) return
+    nav(e.key === 'ArrowLeft' ? -1 : 1)
+  }, { signal: ac.signal })
+
   // Nærmeste slide -> aktiv prikk + caption byttes rett (ingen fade her).
   let scrollIdx = 0
   strip.addEventListener('scroll', () => {
