@@ -242,7 +242,21 @@ img { max-width: 100%; display: block; }
   top: var(--panel-top);
   width: var(--panel-w);
   height: var(--panel-h);
-  z-index: 0;
+  /* Above #carousel-canvas (1) and .mobil-scrim (2), same level as
+     .hero-content (3, DOM order puts the text on top) -- the .is-ready
+     gate (js/carousel.js) only controls WHEN the poster fades, so it must
+     actually sit above anything it's meant to hide. Was 0 (BELOW the
+     canvas) -- the canvas's own panel-opacity animation kept fading in
+     over the still-visible poster regardless of .is-ready. Real root cause
+     of the "desktop flash on mobile" report, 2026-09-05; the reveal-gate
+     timing fix was necessary but not sufficient on its own. */
+  z-index: 3;
+  /* CSS opacity doesn't affect hit-testing -- now that this sits ABOVE the
+     canvas/mobile strip (was below), an invisible-but-still-there poster
+     would otherwise block clicks/drags/swipes on the carousel underneath
+     once faded. No interactive content of its own (buttons live in the
+     separate .hero-content). */
+  pointer-events: none;
   overflow: hidden;
   border-radius: 30px;
   border: 1px solid var(--line);
@@ -410,6 +424,12 @@ html:not(.js) .hero-poster img,
   min-height: 400px;
 }
 .carousel-stage.is-mobile .carousel-nav { display: none; }
+/* Also hidden until .is-ready (not just until .is-mobile is confirmed) --
+   during a transient/incorrect desktop mount (before the mobile switch
+   lands) these were always visible regardless of readiness, since nothing
+   here ever checked it. Second half of the same "desktop flash on mobile"
+   root cause as .hero-poster's z-index above. */
+.carousel-stage:not(.is-ready) .carousel-nav { display: none; }
 .carousel-stage.is-mobile .hero-content {
   left: 20px; right: 20px;
   top: auto; bottom: clamp(46px, 12vw, 74px);   /* plass til prikkene under */
