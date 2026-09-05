@@ -150,7 +150,7 @@ export async function initCarousel(canvas) {
   // ================= MOBIL: vanlig scroll-snap-karusell =====================
   function mountMobile() {
     const ac = new AbortController()
-    stage.classList.add('is-mobile', 'is-ready')
+    stage.classList.add('is-mobile')
 
     const strip = document.createElement('div')
     strip.className = 'mobil-karusell'
@@ -167,6 +167,17 @@ export async function initCarousel(canvas) {
     scrim.className = 'mobil-scrim'
     stage.appendChild(strip)
     stage.appendChild(scrim)
+
+    // Only fade the poster out once the slide actually being shown has
+    // loaded -- setting .is-ready synchronously left a blank gap (the fresh
+    // <img>s aren't painted yet) before the photo popped in.
+    const markReady = () => stage.classList.add('is-ready')
+    const firstImg = slides[currentSlot] ?? slides[0]
+    if (!firstImg || firstImg.complete) markReady()
+    else {
+      firstImg.addEventListener('load', markReady, { once: true, signal: ac.signal })
+      firstImg.addEventListener('error', markReady, { once: true, signal: ac.signal })
+    }
 
     // Start på samme bilde som man var på (viktig ved rotasjon).
     let scrollIdx = currentSlot
