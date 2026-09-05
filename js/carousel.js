@@ -153,7 +153,7 @@ export async function initCarousel(canvas) {
   }
 
   // ================= MOBIL: vanlig scroll-snap-karusell =====================
-  function mountMobile() {
+  function mountMobile(myGen) {
     const ac = new AbortController()
     stage.classList.add('is-mobile')
 
@@ -182,8 +182,11 @@ export async function initCarousel(canvas) {
 
     // Only fade the poster out once the slide actually being shown has
     // loaded -- setting .is-ready synchronously left a blank gap (the fresh
-    // <img>s aren't painted yet) before the photo popped in.
-    const markReady = () => stage.classList.add('is-ready')
+    // <img>s aren't painted yet) before the photo popped in. Routed through
+    // markContentReady()/reveal() (not a direct classList.add) so a mode
+    // that's about to be replaced never gets to show itself either -- see
+    // that function's own comment.
+    const markReady = () => markContentReady(myGen)
     const firstImg = slides[currentSlot] ?? slides[0]
     if (!firstImg || firstImg.complete) markReady()
     else {
@@ -217,7 +220,7 @@ export async function initCarousel(canvas) {
   }
 
   // ================= DESKTOP: buet 3D-løkke (Three.js) ======================
-  async function mountDesktop(isCurrent) {
+  async function mountDesktop(isCurrent, myGen) {
     if (!THREE) {
       try { THREE = await import('three') }
       catch (e) {
@@ -419,7 +422,10 @@ export async function initCarousel(canvas) {
       if (settled) { renderAngle = targetAngle; idle = true }
       render()
       if (!ready && opacity >= 1) {
-        if (readyArmed) { ready = true; stage.classList.add('is-ready') }
+        // Routed through markContentReady()/reveal() (see that function's
+        // own comment) instead of a direct classList.add -- a desktop mount
+        // that's about to be replaced by mobile never gets to show itself.
+        if (readyArmed) { ready = true; markContentReady(myGen) }
         else { readyArmed = true }
       }
       if (!idle || dragging || !ready) raf = requestAnimationFrame(tick)
@@ -494,9 +500,42 @@ export async function initCarousel(canvas) {
   let gen = 0
   let forceMode = null   // dev: overstyr fra konsollen
 
+  // ── Reveal gate (2026-09-05) ────────────────────────────────────────────
+  // A guessed settling delay before trusting the first mq.matches read
+  // (see the setTimeout below) turned out to still let the WRONG mode's
+  // content finish loading and reveal itself before the correction landed
+  // -- Ricky caught it live, a slow-motion capture showing the desktop 3D
+  // panel + arrows flash in on a phone before swapping to the real mobile
+  // layout. No fixed delay can be guaranteed long enough on every device.
+  // Structural fix instead: .is-ready is only ever added once the
+  // currently-mounted mode's own content has loaded AND that mode STILL
+  // agrees with what the viewport wants right this instant. If it doesn't
+  // (a correction is landing), reveal() just declines -- the next `change`-
+  // triggered apply() (mode switch) or its own early-return branch (mode
+  // unchanged, just re-settled) will call reveal() again once things
+  // actually match. A mode about to be replaced is structurally never
+  // shown, independent of timing.
+  let contentReadyGen = -1
+  function markContentReady(myGen) { contentReadyGen = myGen; reveal() }
+  function reveal(force = false) {
+    if (!force) {
+      if (contentReadyGen !== gen) return
+      // Compare against the SAME decision apply() would make right now, not
+      // raw mq.matches -- otherwise a dev forceMode() override (which is
+      // deliberately viewport-independent) would never pass this check.
+      const want = forceMode || (mq.matches ? 'mobile' : 'desktop')
+      if (want !== curMode) return
+    }
+    stage.classList.add('is-ready')
+  }
+  // Last-resort fallback: if the agreement check above somehow never
+  // converges (unforeseen edge case), don't leave the poster showing
+  // forever -- a possibly-still-settling mode beats a permanently stuck one.
+  setTimeout(() => reveal(true), 4000)
+
   async function apply() {
     const want = forceMode || (mq.matches ? 'mobile' : 'desktop')
-    if (want === curMode) return
+    if (want === curMode) { reveal(); return }
     const myGen = ++gen
     try { unmount() } catch (e) { /* nothing */ }
     unmount = () => {}
@@ -507,26 +546,22 @@ export async function initCarousel(canvas) {
     setCurrentSlot(currentSlot)
 
     if (want === 'mobile') {
-      unmount = mountMobile()
+      unmount = mountMobile(myGen)
     } else {
-      const u = await mountDesktop(() => gen === myGen)
+      const u = await mountDesktop(() => gen === myGen, myGen)
       if (gen !== myGen) { try { u && u() } catch (e) {} ; return }
       unmount = u || (() => {})
     }
   }
 
-  // iOS Safari can report a transiently too-wide viewport in the very first
-  // moments of page load (layout viewport not settled yet), which made
-  // mq.matches read "desktop" for a beat before correcting itself -- caught
-  // live via a slow-motion screen recording (Ricky, 2026-09-05): the round
-  // 3D panel + prev/next arrows flashed in, then swapped to the real mobile
-  // layout a frame or two later. Give the browser a moment to settle before
-  // trusting the FIRST read. setTimeout, NOT requestAnimationFrame -- rAF
-  // only fires while the page is actively compositing and can stall
-  // indefinitely otherwise (confirmed live: hung a headless check for 45s),
-  // which would mean the carousel never mounts at all if that happens on a
-  // real device. Later `change` events (real resizes/rotations) still react
-  // immediately, unthrottled.
+  // Minor politeness, not a correctness fix (the reveal gate above is): on
+  // iOS Safari the very first mq.matches read can be transiently wrong
+  // (layout viewport not settled yet), so mounting immediately would often
+  // mean pointlessly building the heavy desktop 3D scene just to tear it
+  // down a beat later. setTimeout, NOT requestAnimationFrame -- rAF only
+  // fires while the page is actively compositing and can stall indefinitely
+  // otherwise (confirmed live: hung a headless check for 45s), which would
+  // mean the carousel never mounts at all if that happens on a real device.
   await new Promise(r => setTimeout(r, 60))
   await apply()
   mq.addEventListener('change', apply)
