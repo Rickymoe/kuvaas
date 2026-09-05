@@ -13,8 +13,6 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/style.css">
-<!-- three.js lastes dynamisk (kun desktop), men vi kan varme opp tilkoblingen -->
-<link rel="preconnect" href="https://unpkg.com" crossorigin>
 </head>
 <body data-page="hjem">
 
@@ -22,12 +20,10 @@
 
 <section class="hero" aria-label="Bildekarusell">
   <div id="carousel-stage" class="carousel-stage">
-    <canvas id="carousel-canvas" aria-hidden="true"></canvas>
-    <!-- Poster: uskarpt stillbilde (blur-up, inline data-URI + <img>) rammet og
-         tonet som karusell-panelet. Vises umiddelbart; karusellen toner skarp
-         inn oppå og carousel.js legger .is-ready på stagen -> posteren fader ut.
-         Blir stående ved manglende JS/WebGL (beholder alt-tekst + SEO).
-         Ankret til --panel-* som carousel.js setter. -->
+    <!-- Poster: hero-fotoet, vises umiddelbart. Ligger bak scroll-snap-stripa
+         som carousel.js bygger; carousel.js legger .is-ready på stagen når det
+         synlige stripe-bildet er dekodet -> posteren fader ut (samme foto
+         under). Blir stående ved manglende JS (beholder alt-tekst + SEO). -->
     <div class="hero-poster">
       <picture>
         <source media="(max-width: 950px)" srcset="Bilder/havn-hero-mobile.jpg">
@@ -50,12 +46,6 @@
         <span aria-hidden="true"><span id="rating-value">4,7</span> av <span id="rating-count">61</span> anmeldelser på Google</span>
       </a>
     </div>
-    <button type="button" class="carousel-nav carousel-nav--prev" aria-label="Forrige bilde">
-      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-    </button>
-    <button type="button" class="carousel-nav carousel-nav--next" aria-label="Neste bilde">
-      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-    </button>
   </div>
 </section>
 
@@ -139,12 +129,9 @@
 
 <div id="site-footer"></div>
 
-<script type="importmap">
-{ "imports": { "three": "https://unpkg.com/three@0.165.0/build/three.module.js" } }
-</script>
 <script type="module">
   import { initCarousel } from './js/carousel.js';
-  initCarousel(document.getElementById('carousel-canvas'));
+  initCarousel(document.getElementById('carousel-stage'));
 </script>
 <script src="js/main.js"></script>
 <!-- Cloudflare Web Analytics --><script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "3b2830d8c1b74ed68dee031783103adc"}'></script><!-- End Cloudflare Web Analytics -->

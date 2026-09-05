@@ -196,69 +196,33 @@ img { max-width: 100%; display: block; }
   box-shadow: var(--skygge-md);
 }
 
-/* ===== Hero -- buet 3D-bildekarusell (js/carousel.js) =====
-   Fullbreddes cream-scene med et buet fotopanel som leser nesten flatt foran
-   og krummer bort til sidene. Mørkningen bak teksten er BAKT INN i selve
-   karusell-bildet (shader i carousel.js) -- så den ligger alltid presist på
-   bildet, uansett bue eller skjermbredde. HTML-teksten ankres til de ekte
-   projiserte panel-kantene via --panel-left / --panel-w. .hero-poster =
-   uskarpt stillbilde (blur-up) som vises til carousel.js melder .is-ready,
-   og blir stående ved no-JS/no-WebGL. */
+/* ===== Hero -- scroll-snap-bildekarusell (js/carousel.js) =====
+   Native scroll-snap-strip på alle bredder -- nettleseren gjør sveip + fart +
+   snapp. Var tidligere en buet 3D-løkke (three.js) på desktop med live
+   modusbytte; 3D-varianten er flyttet til X6-prosjektet (2026-09-05).
+   .hero-poster = hero-fotoet, ligger BAK stripa og vises til carousel.js
+   melder .is-ready (strip-bildet dekodet). Blir stående ved no-JS (SEO). */
 .hero { padding-block: 0; }
 
 .carousel-stage {
   position: relative;
   width: 100%;
-  /* min(..., 88vh): en mobil i landskap (bred nok til desktop-3D, men lav
-     skjerm) skal ikke få en hero høyere enn skjermen. */
-  height: min(clamp(460px, 46vw, 580px), 88vh);
+  height: min(76vh, 620px);
+  min-height: 400px;
   overflow: hidden;
-  touch-action: pan-y;   /* horisontal sveip -> karusell, vertikal -> scroll */
-  /* Fallback-verdier til carousel.js har projisert de ekte. */
-  --panel-left: max(24px, calc(50vw - 560px));
-  --panel-w: min(1120px, calc(100vw - 48px));
-  --panel-top: 4%;
-  --panel-h: 90%;
+  background: var(--cream);   /* definert grunn mens strip-<img> laster kaldt */
 }
-#carousel-canvas {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  display: block;
-  z-index: 1;
-  cursor: grab;
-}
-/* Poster -- rolig cream-flate (samme farge som siden) med hårstrek-kant.
-   Under lasting ser man hero-teksten over cream-flaten; karusell-fotoet toner
-   inn oppå og carousel.js legger .is-ready -> posteren fader ut. Ankret til
-   --panel-* (carousel.js), eller standardverdiene på .carousel-stage.
-   <img> ligger i DOM for SEO/skjermlesere men er skjult når karusellen kjører
-   -- vises igjen ved manglende JS (html:not(.js)) eller WebGL (.no-webgl). */
+
+/* Poster -- hero-fotoet. Ligger bak stripa (z-index 0) og viser samme bilde;
+   fader ut når carousel.js legger .is-ready på stagen. no-JS: .is-ready settes
+   aldri -> posteren blir stående (alt-tekst + SEO). Se
+   reference_opaque_poster_covers_cached_content i minnet. */
 .hero-poster {
   position: absolute;
-  left: var(--panel-left);
-  top: var(--panel-top);
-  width: var(--panel-w);
-  height: var(--panel-h);
-  /* Above #carousel-canvas (1) and .mobil-karusell (1), same level as
-     .hero-content (3, DOM order puts the text on top) -- the .is-ready
-     gate (js/carousel.js) only controls WHEN the poster fades, so it must
-     actually sit above anything it's meant to hide. Was 0 (BELOW the
-     canvas) -- the canvas's own panel-opacity animation kept fading in
-     over the still-visible poster regardless of .is-ready. Real root cause
-     of the "desktop flash on mobile" report, 2026-09-05; the reveal-gate
-     timing fix was necessary but not sufficient on its own. */
-  z-index: 3;
-  /* CSS opacity doesn't affect hit-testing -- now that this sits ABOVE the
-     canvas/mobile strip (was below), an invisible-but-still-there poster
-     would otherwise block clicks/drags/swipes on the carousel underneath
-     once faded. No interactive content of its own (buttons live in the
-     separate .hero-content). */
-  pointer-events: none;
+  inset: 0;
+  z-index: 0;
   overflow: hidden;
-  border-radius: 30px;
-  border: 1px solid var(--line);
+  pointer-events: none;
   background: var(--cream);
   transition: opacity .6s ease .2s;
 }
@@ -267,14 +231,10 @@ img { max-width: 100%; display: block; }
   height: 100%;
   object-fit: cover;
   display: block;
-  opacity: 0;
 }
-html:not(.js) .hero-poster img,
-.carousel-stage.no-webgl .hero-poster img { opacity: 1; }
 .carousel-stage.is-ready .hero-poster { opacity: 0; }
 
-/* ===== Mobil: vanlig scroll-snap-karusell (carousel.js initMobile) =====
-   Ingen three.js. Nettleseren gjør sveip + fart + snapp nativt. */
+/* Scroll-snap-stripa (carousel.js bygger den). */
 .mobil-karusell {
   position: absolute;
   inset: 0;
@@ -295,71 +255,33 @@ html:not(.js) .hero-poster img,
   scroll-snap-align: center;
   scroll-snap-stop: always;
 }
-/* Teksten -- boksen dekker panelets trygge indre boks (topp/høyde ved
-   hjørne-nivået), teksten sentreres i den -> kan aldri havne over/under det
-   buede bildet. Fast max-width (som det gamle hero-kortet) -> h1 skalerer
-   identisk. */
+/* Hero-teksten -- bunn-ankret over stripa. Sveip går gjennom (pointer-events),
+   men knappene/rating fanger klikk. */
 .hero-content {
   position: absolute;
   z-index: 3;
-  left: max(20px, calc(var(--panel-left) + clamp(20px, 3vw, 56px)));
-  top: var(--panel-top);
-  height: var(--panel-h);
+  left: 20px; right: 20px;
+  bottom: clamp(46px, 12vw, 74px);   /* plass til prikkene under */
   display: flex;
   flex-direction: column;
-  justify-content: center;
-  max-width: 33rem;
-  /* Ingen entré-animasjon: teksten er der fra første paint (posteren er =
-     sidefargen, så "laste-øyeblikket" er bare tekst + myk vignett). transition
-     styrer fade ut/inn ved bla. */
+  justify-content: flex-end;
+  pointer-events: none;
   transition: opacity .6s ease .04s, transform .6s ease .04s;
 }
-/* Bla: teksten fades ut, byttes usynlig, fades inn med det nye bildet. */
-.carousel-stage.is-turning .hero-content {
-  opacity: 0;
-  transform: translateY(8px);
-  transition: opacity .7s ease, transform .7s ease;
-}
+.hero-content .btn,
+.hero-content .rating-badge { pointer-events: auto; }
 .hero-content .eyebrow,
 .hero-content h1,
 .hero-content .lead { text-shadow: 0 1px 16px rgba(38,28,19,.5); }
+.hero-content h1 { font-size: var(--text-2xl); }
 
-/* Pil-knapper -- ankret til panel-kantene (--panel-left/-w), ikke lermets-
-   kanten, så de ikke forsvinner ut i periferien på store skjermer. */
-.carousel-nav {
-  position: absolute;
-  top: calc(var(--panel-top) + var(--panel-h) / 2);
-  transform: translateY(-50%);
-  width: 44px;
-  height: 44px;
-  display: grid;
-  place-items: center;
-  border: 1px solid var(--hvit-kant);
-  border-radius: 50%;
-  background: var(--cream-glass);
-  backdrop-filter: blur(6px);
-  color: var(--terracotta-dark);
-  cursor: pointer;
-  box-shadow: var(--skygge-sm);
-  transition: background .18s ease, transform .18s ease;
-  z-index: 4;
-}
-.carousel-nav svg { width: 20px; height: 20px; }
-.carousel-nav--prev { left: max(6px, calc(var(--panel-left) - 22px)); }
-.carousel-nav--next { right: max(6px, calc(100% - var(--panel-left) - var(--panel-w) - 22px)); }
-.carousel-nav:hover { background: var(--cream); transform: translateY(-50%) scale(1.06); }
-.carousel-nav:active { transform: translateY(-50%) scale(0.96); }
-/* Skjult til .is-ready (uavhengig av mobil/desktop) -- ikke vis pilene før
-   karusellen faktisk er interaktiv. Under 950px er de uansett display:none
-   for godt via @media-blokken lenger ned. */
-.carousel-stage:not(.is-ready) .carousel-nav { display: none; }
-
-/* Prikker -- "det er flere bilder her" + hvilket du er på. Nederst på panelet. */
+/* Prikker -- sentrert nederst. */
 .carousel-dots {
   position: absolute;
   z-index: 4;
-  left: max(20px, calc(var(--panel-left) + clamp(20px, 3vw, 56px)));
-  top: calc(var(--panel-top) + var(--panel-h) - 34px);
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: 18px;
   display: flex;
   gap: 9px;
 }
@@ -378,65 +300,7 @@ html:not(.js) .hero-poster img,
   .carousel-dot:hover { background: rgba(253,246,236,.8); }
 }
 
-/* ===== Mobil-layout -- REN @media, ikke JS-klasse (2026-09-05) =====
-   Var tidligere .carousel-stage.is-mobile, satt av carousel.js sin
-   matchMedia-lesning. Men den lesningen kan være forbigående FEIL en god
-   stund på iOS Safari (ikke bare noen ms) -- lenge nok til at hele
-   desktop-karusellen (canvas + piler) rakk å bli ferdig lastet og revealed
-   FØR JS rettet seg selv, synlig som et fullt fade-inn/ut før mobil-visningen
-   tok over (Ricky-rapport, 2026-09-05). Ingen forsinkelse kan garanteres lang
-   nok mot det. Løsning: CSS-breddesjekk er nå eneste sannhet for hva som
-   VISES (#carousel-canvas / .carousel-nav skjules her, garantert, uavhengig
-   av JS-timing) -- JS bestemmer bare hva som BYGGES (ytelse), aldri hva som
-   vises. Bommer JS et øyeblikk, blir det usynlig i stedet for å blinke.
-   Bevisst avveining: en evt. rotasjon som krysser 950px (i praksis kun
-   nettbrett, ikke telefon) kan gi et kort tomrom mens JS bygger om -- langt
-   bedre enn at feil modus vises fullt ferdig, som var det faktiske, gjentatte
-   problemet.
-
-   EKSPERIMENT 2026-09-05: desktop-karusellen er slått av (se DESKTOP_CAROUSEL
-   i js/carousel.js). Breakpointen står midlertidig på 100000px så mobil-
-   layouten gjelder ALLE bredder. Sett tilbake til 950px når 3D skrus på. */
-@media (max-width: 100000px) {
-  .carousel-stage {
-    height: min(76vh, 620px); min-height: 400px;
-    touch-action: auto;              /* slipp native horisontal-scroll løs (var pan-y) */
-    background: var(--cream);        /* definert grunn mens strip-<img> laster kaldt */
-  }
-  .carousel-stage #carousel-canvas { display: none; }
-  .carousel-stage .carousel-nav { display: none; }
-  /* Posteren på mobil: EKTE foto (ikke cream-flate) som ren backdrop BAK
-     stripen. <picture>-kilden lastes med høy prioritet før JS rekker å lage
-     strip-<img>-ene, så den er alltid klar først. Strip-<img>-ene lages på
-     nytt ved hver mount og må dekodes fra cache -> et lite blank-vindu; da
-     ser man posterfotoet gjennom (identisk bilde), ikke cream, ikke tomrom.
-     Poster-cream-flaten som lå OPPÅ og fadet vekk var selve blinket (Ricky
-     2026-09-05, bilde -> cream -> bilde, ~0.6s = posterfadens varighet). */
-  html.js .hero-poster { z-index: 0; }
-  html.js .hero-poster img { opacity: 1; }
-  /* Full-bleed-form (gjelder også no-JS-posteren). */
-  .hero-poster {
-    left: 0; top: 0; width: 100%; height: 100%;
-    border-radius: 0; border: none;
-  }
-  .hero-content {
-    left: 20px; right: 20px;
-    top: auto; bottom: clamp(46px, 12vw, 74px);   /* plass til prikkene under */
-    height: auto;
-    max-width: none;
-    justify-content: flex-end;
-    pointer-events: none;            /* sveip går gjennom teksten til karusellen */
-  }
-  .hero-content .btn,
-  .hero-content .rating-badge { pointer-events: auto; }
-  .hero-content h1 { font-size: var(--text-2xl); }
-  .carousel-dots {
-    left: 50%; transform: translateX(-50%);
-    top: auto; bottom: 18px;
-  }
-}
 @media (prefers-reduced-motion: reduce) {
-  .carousel-nav { transition: none; }
   .hero-poster { transition: none; }
 }
 
