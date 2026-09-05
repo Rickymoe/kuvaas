@@ -231,12 +231,12 @@ img { max-width: 100%; display: block; }
   z-index: 2;
   pointer-events: none;
   border-radius: inherit;
-  background: linear-gradient(to top,
-    rgba(38,28,19,.80) 0%,
-    rgba(38,28,19,.60) 28%,
-    rgba(38,28,19,.36) 52%,
-    rgba(38,28,19,.12) 74%,
-    rgba(38,28,19,0) 92%);
+  background: linear-gradient(to top right,
+    rgba(38,28,19,.82) 0%,
+    rgba(38,28,19,.60) 22%,
+    rgba(38,28,19,.36) 44%,
+    rgba(38,28,19,.14) 66%,
+    rgba(38,28,19,0) 86%);
 }
 
 /* Poster -- hero-fotoet. Ligger bak stripa (z-index 0) og viser samme bilde;
