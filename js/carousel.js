@@ -515,6 +515,19 @@ export async function initCarousel(canvas) {
     }
   }
 
+  // iOS Safari can report a transiently too-wide viewport in the very first
+  // moments of page load (layout viewport not settled yet), which made
+  // mq.matches read "desktop" for a beat before correcting itself -- caught
+  // live via a slow-motion screen recording (Ricky, 2026-09-05): the round
+  // 3D panel + prev/next arrows flashed in, then swapped to the real mobile
+  // layout a frame or two later. Give the browser a moment to settle before
+  // trusting the FIRST read. setTimeout, NOT requestAnimationFrame -- rAF
+  // only fires while the page is actively compositing and can stall
+  // indefinitely otherwise (confirmed live: hung a headless check for 45s),
+  // which would mean the carousel never mounts at all if that happens on a
+  // real device. Later `change` events (real resizes/rotations) still react
+  // immediately, unthrottled.
+  await new Promise(r => setTimeout(r, 60))
   await apply()
   mq.addEventListener('change', apply)
 
