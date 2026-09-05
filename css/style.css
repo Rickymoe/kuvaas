@@ -221,9 +221,10 @@ img { max-width: 100%; display: block; }
   border-radius: 24px;        /* innrammet panel, som resten av innholdet */
   background: var(--cream);   /* definert grunn mens strip-<img> laster kaldt */
 }
-/* Bunn-vektet scrim for lesbarhet bak hero-teksten. Ligger mellom stripa (1)
-   og teksten (3); himmelen på toppen holder seg ren. Rent statisk lag --
-   ingen readiness-gate, kan ikke blinke (det gamle blinket var posteren). */
+/* Scrim for lesbarhet bak hero-teksten. Ligger mellom stripa (1) og teksten
+   (3). Radial fra bunn-venstre hjørne -> hjørne-glød som toner jevnt utover
+   i en bue, ingen rett diagonal kant. Himmelen topp-høyre holder seg ren.
+   Rent statisk lag -- ingen readiness-gate, kan ikke blinke. */
 .carousel-stage::after {
   content: "";
   position: absolute;
@@ -231,12 +232,13 @@ img { max-width: 100%; display: block; }
   z-index: 2;
   pointer-events: none;
   border-radius: inherit;
-  background: linear-gradient(to top right,
+  background: radial-gradient(135% 120% at 0% 100%,
     rgba(38,28,19,.60) 0%,
-    rgba(38,28,19,.40) 24%,
-    rgba(38,28,19,.22) 48%,
-    rgba(38,28,19,.07) 70%,
-    rgba(38,28,19,0) 88%);
+    rgba(38,28,19,.47) 20%,
+    rgba(38,28,19,.32) 38%,
+    rgba(38,28,19,.17) 56%,
+    rgba(38,28,19,.05) 76%,
+    rgba(38,28,19,0) 92%);
 }
 
 /* Poster -- hero-fotoet. Ligger bak stripa (z-index 0) og viser samme bilde;
