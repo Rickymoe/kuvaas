@@ -333,15 +333,16 @@ img { max-width: 100%; display: block; }
   .carousel-dot:hover { background: rgba(253,246,236,.8); }
 }
 
-/* Pil-knapper -- vertikalt sentrert, én på hver side av panelet. */
+/* Pil-knapper -- vertikalt sentrert, én på hver side av panelet. Kun desktop
+   (> 950px): på mobil holder sveip, og de tar bare plass. */
 .carousel-nav {
+  display: none;
   position: absolute;
   top: 50%;
   transform: translateY(-50%);
   z-index: 4;
   width: 44px;
   height: 44px;
-  display: grid;
   place-items: center;
   border: 1px solid var(--hvit-kant);
   border-radius: 50%;
@@ -359,8 +360,8 @@ img { max-width: 100%; display: block; }
   .carousel-nav:hover { background: var(--cream); transform: translateY(-50%) scale(1.06); }
 }
 .carousel-nav:active { transform: translateY(-50%) scale(0.96); }
-@media (max-width: 640px) {
-  .carousel-nav { width: 38px; height: 38px; }
+@media (min-width: 951px) {
+  .carousel-nav { display: grid; }
 }
 
 @media (prefers-reduced-motion: reduce) {
