@@ -18,6 +18,11 @@ let THREE   // lastes dynamisk kun på desktop, gjenbrukes etterpå
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v))
 const DEG = Math.PI / 180
 
+// foo.jpg -> foo-mobile.jpg. The mobile carousel serves a smaller sibling
+// file instead of the same full-res image desktop uses (convention shared
+// with the poster's <picture><source> in index.html).
+const mobileImageSrc = (path) => path.replace(/(\.[a-z0-9]+)$/i, '-mobile$1')
+
 const CONFIG = {
   radius: 3.9,               // løkkas radius
   slotArc: Math.PI / 2,      // 4 slots, 90 grader mellom hvert bildesenter
@@ -156,7 +161,14 @@ export async function initCarousel(canvas) {
     strip.className = 'mobil-karusell'
     const slides = filled.map((s, i) => {
       const im = document.createElement('img')
-      im.src = s.image
+      // Desktop's own s.image is the full 2560px source (~480KB) -- wasteful
+      // over a mobile connection and slow enough to make the poster's
+      // loading state noticeable ("blinker" report, 2026-09-05). Mobile gets
+      // a pre-generated ~1000px/85KB `-mobile` sibling file instead (same
+      // convention the poster's own <picture><source> in index.html uses,
+      // so both requests hit the same cached URL). Any future distinct
+      // per-slot photo needs its own `-mobile` file alongside it.
+      im.src = mobileImageSrc(s.image)
       im.alt = ''
       im.loading = i === 0 ? 'eager' : 'lazy'
       im.decoding = 'async'

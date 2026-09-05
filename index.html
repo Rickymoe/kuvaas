@@ -29,7 +29,10 @@
          Blir stående ved manglende JS/WebGL (beholder alt-tekst + SEO).
          Ankret til --panel-* som carousel.js setter. -->
     <div class="hero-poster">
-      <img src="Bilder/havn-hero.jpg" alt="Småbåthavna i Holmestrand sentrum en solfylt høstdag" fetchpriority="high" width="2560" height="1213" />
+      <picture>
+        <source media="(max-width: 950px)" srcset="Bilder/havn-hero-mobile.jpg">
+        <img src="Bilder/havn-hero.jpg" alt="Småbåthavna i Holmestrand sentrum en solfylt høstdag" fetchpriority="high" width="2560" height="1213" />
+      </picture>
     </div>
     <!-- Ikke .reveal her: heroen er over folden og ligger inline i denne fila,
          så den skal være synlig fra første paint. Entré er en ren CSS-animasjon
