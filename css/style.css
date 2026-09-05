@@ -202,14 +202,23 @@ img { max-width: 100%; display: block; }
    modusbytte; 3D-varianten er flyttet til X6-prosjektet (2026-09-05).
    .hero-poster = hero-fotoet, ligger BAK stripa og vises til carousel.js
    melder .is-ready (strip-bildet dekodet). Blir stående ved no-JS (SEO). */
-.hero { padding-block: 0; }
+/* Samme bredde som resten av innholdet (.wrap: 1180px + 32px sidepadding). */
+.hero {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: var(--space-6) 32px 0;
+}
+@media (max-width: 640px) {
+  .hero { padding-inline: 20px; }
+}
 
 .carousel-stage {
   position: relative;
   width: 100%;
-  height: min(76vh, 620px);
-  min-height: 400px;
+  height: min(72vh, 560px);
+  min-height: 380px;
   overflow: hidden;
+  border-radius: 24px;        /* innrammet panel, som resten av innholdet */
   background: var(--cream);   /* definert grunn mens strip-<img> laster kaldt */
 }
 
@@ -260,7 +269,7 @@ img { max-width: 100%; display: block; }
 .hero-content {
   position: absolute;
   z-index: 3;
-  left: 20px; right: 20px;
+  left: clamp(20px, 4vw, 40px); right: clamp(20px, 4vw, 40px);
   bottom: clamp(46px, 12vw, 74px);   /* plass til prikkene under */
   display: flex;
   flex-direction: column;
