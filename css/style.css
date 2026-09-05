@@ -49,7 +49,14 @@
   --lh-brod: 1.65;
 }
 *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
-html { scroll-behavior: smooth; overflow-x: clip; }
+html {
+  scroll-behavior: smooth; overflow-x: clip;
+  /* Nettleserens eget rot-lerret -- males FØR body sin bakgrunn. Uten dette
+     kan et kort gap mellom sideoverganger (spesielt iOS Safari) vise
+     nøytral hvit i stedet for --cream. Ricky rapporterte en kort
+     krem/hvit-flash ved vanlig (ikke rask) navigering, 2026-09-05. */
+  background: var(--cream);
+}
 body {
   background: var(--cream);
   color: var(--brown);
