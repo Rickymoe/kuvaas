@@ -35,14 +35,6 @@ const CONFIG = {
   cornerRadius: 0.045,       // avrundede hjørner på bildet, andel av panelhøyden
   bg: 0xfdf6ec,              // = --cream (tåke + clear color)
 
-  // Mørkning bakt inn i HVERT panel-materiale (shader) -- gradienten ER bildet,
-  // så den ligger alltid presist på det. Venstretung + ekstra mot bunn.
-  shadeColor: [0.09, 0.065, 0.045],
-  shadeLeftEnd: 0.92,
-  shadeLeftFalloff: 1.15,
-  shadeBottomBoost: 0.5,
-  shadeMax: 0.90,
-
   // Kameraets horisontale synsfelt (hFov) er avledet av vFov * aspect --
   // uten tak vokser det ubegrenset på en veldig bred/lav stage, og avdekker
   // stadig mer av løkkas krumme sidepaneler jo bredere vinduet blir (selve
@@ -178,16 +170,13 @@ export async function initCarousel(canvas) {
       strip.appendChild(im)
       return im
     })
-    const scrim = document.createElement('div')
-    scrim.className = 'mobil-scrim'
     stage.appendChild(strip)
-    stage.appendChild(scrim)
 
     // Fade posteren ut FØRST når det synlige bildet er dekodet og klart til
     // å males -- ikke bare `load`. På iOS Safari fyrer `load` et lite øyeblikk
     // før bildet faktisk er rasterisert, så posteren rakk å forsvinne mens
-    // strip-bildet enda var utegnet -> man så bare .mobil-scrim-gradienten
-    // over tomrom ("er det gradienten?", Ricky-rapport 2026-09-05).
+    // strip-bildet enda var utegnet -> man så et blankt glimt
+    // ("er det gradienten?", Ricky-rapport 2026-09-05).
     // img.decode() loser først når det kan males flimmerfritt. Routet via
     // markContentReady()/reveal() (ikke direkte classList.add) så en modus
     // som straks byttes ut aldri rekker å vise seg -- se den funksjonens
@@ -225,7 +214,6 @@ export async function initCarousel(canvas) {
     return () => {
       ac.abort()
       strip.remove()
-      scrim.remove()
       stage.classList.remove('is-mobile', 'is-ready')
     }
   }
@@ -285,7 +273,6 @@ export async function initCarousel(canvas) {
         map: tex, alphaMap, transparent: true,
         side: THREE.DoubleSide, toneMapped: false,
       })
-      applyPanelShade(mat)
       const mesh = new THREE.Mesh(geo, mat)
       loop.add(mesh)
       panels.push(mesh)
@@ -578,26 +565,6 @@ export async function initCarousel(canvas) {
   mq.addEventListener('change', apply)
 
   if (DEV) window.__cxMode = (m) => { forceMode = m || null; return apply() }
-}
-
-// Baker venstretung + bunn-tung mørkning inn i panel-materialet via shader-hook.
-function applyPanelShade(mat) {
-  const [dr, dg, db] = CONFIG.shadeColor
-  const f = (n) => n.toFixed(4)
-  mat.customProgramCacheKey = () => 'kuvaas-panel-shade'
-  mat.onBeforeCompile = (shader) => {
-    shader.fragmentShader = shader.fragmentShader.replace(
-      '#include <map_fragment>',
-      `#include <map_fragment>
-      {
-        float lx = clamp(vMapUv.x / ${f(CONFIG.shadeLeftEnd)}, 0.0, 1.0);
-        float leftDark = ${f(CONFIG.shadeMax)} * pow(1.0 - lx, ${f(CONFIG.shadeLeftFalloff)});
-        float botDark = smoothstep(0.58, 0.0, vMapUv.y) * ${f(CONFIG.shadeBottomBoost)};
-        float d = min(${f(CONFIG.shadeMax)}, leftDark + botDark);
-        diffuseColor.rgb = mix(diffuseColor.rgb, vec3(${f(dr)}, ${f(dg)}, ${f(db)}), d);
-      }`
-    )
-  }
 }
 
 // Hvit avrundet rektangel på svart -- alphaMap (grønn kanal).

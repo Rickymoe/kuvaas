@@ -229,11 +229,10 @@ img { max-width: 100%; display: block; }
   z-index: 1;
   cursor: grab;
 }
-/* Poster -- rolig cream-flate (samme farge som siden) med hårstrek-kant og
-   scrim + tekst. Under lasting ser man i praksis bare hero-teksten over en myk
-   mørk venstre-vignett; karusell-fotoet toner inn oppå og carousel.js legger
-   .is-ready -> posteren fader ut. Ankret til --panel-* (carousel.js), eller
-   standardverdiene på .carousel-stage.
+/* Poster -- rolig cream-flate (samme farge som siden) med hårstrek-kant.
+   Under lasting ser man hero-teksten over cream-flaten; karusell-fotoet toner
+   inn oppå og carousel.js legger .is-ready -> posteren fader ut. Ankret til
+   --panel-* (carousel.js), eller standardverdiene på .carousel-stage.
    <img> ligger i DOM for SEO/skjermlesere men er skjult når karusellen kjører
    -- vises igjen ved manglende JS (html:not(.js)) eller WebGL (.no-webgl). */
 .hero-poster {
@@ -242,7 +241,7 @@ img { max-width: 100%; display: block; }
   top: var(--panel-top);
   width: var(--panel-w);
   height: var(--panel-h);
-  /* Above #carousel-canvas (1) and .mobil-scrim (2), same level as
+  /* Above #carousel-canvas (1) and .mobil-karusell (1), same level as
      .hero-content (3, DOM order puts the text on top) -- the .is-ready
      gate (js/carousel.js) only controls WHEN the poster fades, so it must
      actually sit above anything it's meant to hide. Was 0 (BELOW the
@@ -272,17 +271,6 @@ img { max-width: 100%; display: block; }
 }
 html:not(.js) .hero-poster img,
 .carousel-stage.no-webgl .hero-poster img { opacity: 1; }
-.hero-poster::after {          /* myk mørk venstre-vignett -- bare nok til at
-                                  hero-teksten leses mot cream mens fotoet laster */
-  content: "";
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background: linear-gradient(100deg,
-    rgba(38,28,19,.42) 0%,
-    rgba(38,28,19,.16) 24%,
-    rgba(38,28,19,0) 46%);
-}
 .carousel-stage.is-ready .hero-poster { opacity: 0; }
 
 /* ===== Mobil: vanlig scroll-snap-karusell (carousel.js initMobile) =====
@@ -306,23 +294,6 @@ html:not(.js) .hero-poster img,
   object-fit: cover;
   scroll-snap-align: center;
   scroll-snap-stop: always;
-}
-.mobil-scrim {                  /* bunn-tung -- teksten stables/bunn-ankres i
-                                    .hero-content, kan strekke seg opp mot
-                                    halvveis på hero-en -- monotont voksende
-                                    mørkning uten "hull" så teksten er lesbar
-                                    uansett hvor lyst det underliggende bildet
-                                    er (rettet 2026-09-05 etter Ricky-rapport). */
-  position: absolute;
-  inset: 0;
-  z-index: 2;
-  pointer-events: none;
-  background: linear-gradient(178deg,
-    rgba(38,28,19,.36) 0%,
-    rgba(38,28,19,.32) 25%,
-    rgba(38,28,19,.46) 50%,
-    rgba(38,28,19,.70) 75%,
-    rgba(38,28,19,.92) 100%);
 }
 /* Teksten -- boksen dekker panelets trygge indre boks (topp/høyde ved
    hjørne-nivået), teksten sentreres i den -> kan aldri havne over/under det
@@ -434,13 +405,6 @@ html:not(.js) .hero-poster img,
   .hero-poster {
     left: 0; top: 0; width: 100%; height: 100%;
     border-radius: 0; border: none;
-  }
-  .hero-poster::after {
-    background: linear-gradient(178deg,
-      rgba(38,28,19,.28) 0%,
-      rgba(38,28,19,.1) 34%,
-      rgba(38,28,19,.5) 64%,
-      rgba(38,28,19,.88) 100%);
   }
   .hero-content {
     left: 20px; right: 20px;
