@@ -280,16 +280,21 @@ html:not(.js) .hero-poster img,
   scroll-snap-align: center;
   scroll-snap-stop: always;
 }
-.mobil-scrim {                  /* bunn-tung -- teksten står nederst på mobil */
+.mobil-scrim {                  /* bunn-tung -- teksten stables/bunn-ankres i
+                                    .hero-content, kan strekke seg opp mot
+                                    halvveis på hero-en -- monotont voksende
+                                    mørkning uten "hull" så teksten er lesbar
+                                    uansett hvor lyst det underliggende bildet
+                                    er (rettet 2026-09-05 etter Ricky-rapport). */
   position: absolute;
   inset: 0;
   z-index: 2;
   pointer-events: none;
   background: linear-gradient(178deg,
-    rgba(38,28,19,.28) 0%,
-    rgba(38,28,19,.12) 30%,
-    rgba(38,28,19,.34) 52%,
-    rgba(38,28,19,.66) 74%,
+    rgba(38,28,19,.36) 0%,
+    rgba(38,28,19,.32) 25%,
+    rgba(38,28,19,.46) 50%,
+    rgba(38,28,19,.70) 75%,
     rgba(38,28,19,.92) 100%);
 }
 .carousel-stage.is-mobile #carousel-canvas,
