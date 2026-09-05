@@ -301,15 +301,16 @@ img { max-width: 100%; display: block; }
 .hero-content .lead { text-shadow: 0 1px 16px rgba(38,28,19,.5); }
 .hero-content h1 { font-size: var(--text-2xl); }
 
-/* Prikker -- sentrert nederst. */
+/* Prikker -- sentrert nederst (mobil). Desktop: flyttes til venstre, se
+   @media lenger ned. */
 .carousel-dots {
   position: absolute;
   z-index: 4;
   left: 50%;
   transform: translateX(-50%);
-  bottom: 18px;
+  bottom: var(--space-4);
   display: flex;
-  gap: 9px;
+  gap: var(--space-2);
 }
 .carousel-dot {
   position: relative;
@@ -333,13 +334,12 @@ img { max-width: 100%; display: block; }
   .carousel-dot:hover { background: rgba(253,246,236,.8); }
 }
 
-/* Pil-knapper -- vertikalt sentrert, én på hver side av panelet. Kun desktop
-   (> 950px): på mobil holder sveip, og de tar bare plass. */
+/* Pil-knapper -- par nederst til høyre (den ene genuint ledige sonen; tekst
+   + prikker holder venstre side). Kun desktop (> 950px): sveip på mobil. */
 .carousel-nav {
   display: none;
   position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
+  bottom: var(--space-5);
   z-index: 4;
   width: 44px;
   height: 44px;
@@ -354,14 +354,21 @@ img { max-width: 100%; display: block; }
   transition: background .18s ease, transform .18s ease;
 }
 .carousel-nav svg { width: 20px; height: 20px; }
-.carousel-nav--prev { left: clamp(10px, 2vw, 20px); }
-.carousel-nav--next { right: clamp(10px, 2vw, 20px); }
+.carousel-nav--next { right: var(--space-5); }
+.carousel-nav--prev { right: calc(var(--space-5) + 44px + var(--space-2)); }
 @media (hover: hover) {
-  .carousel-nav:hover { background: var(--cream); transform: translateY(-50%) scale(1.06); }
+  .carousel-nav:hover { background: var(--cream); transform: scale(1.06); }
 }
-.carousel-nav:active { transform: translateY(-50%) scale(0.96); }
+.carousel-nav:active { transform: scale(0.94); }
 @media (min-width: 951px) {
   .carousel-nav { display: grid; }
+  /* Prikkene til venstre, på linje med teksten -> bunnkanten leser
+     [prikker] ...... [piler]. Sentrert vertikalt mot pil-paret. */
+  .carousel-dots {
+    left: clamp(20px, 4vw, 40px);
+    transform: none;
+    bottom: calc(var(--space-5) + 18px);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
