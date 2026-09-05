@@ -170,8 +170,11 @@ export async function initCarousel(canvas) {
       // per-slot photo needs its own `-mobile` file alongside it.
       im.src = mobileImageSrc(s.image)
       im.alt = ''
-      im.loading = i === 0 ? 'eager' : 'lazy'
-      im.decoding = 'async'
+      im.loading = i === currentSlot ? 'eager' : 'lazy'
+      // Det synlige bildet: sync-dekoding -> nettleseren maler det ferdig FØR
+      // det vises, i stedet for å vise en tegnet-men-udekodet ramme. Resten
+      // async så de ikke blokkerer.
+      im.decoding = i === currentSlot ? 'sync' : 'async'
       strip.appendChild(im)
       return im
     })
@@ -180,16 +183,24 @@ export async function initCarousel(canvas) {
     stage.appendChild(strip)
     stage.appendChild(scrim)
 
-    // Only fade the poster out once the slide actually being shown has
-    // loaded -- setting .is-ready synchronously left a blank gap (the fresh
-    // <img>s aren't painted yet) before the photo popped in. Routed through
-    // markContentReady()/reveal() (not a direct classList.add) so a mode
-    // that's about to be replaced never gets to show itself either -- see
-    // that function's own comment.
+    // Fade posteren ut FØRST når det synlige bildet er dekodet og klart til
+    // å males -- ikke bare `load`. På iOS Safari fyrer `load` et lite øyeblikk
+    // før bildet faktisk er rasterisert, så posteren rakk å forsvinne mens
+    // strip-bildet enda var utegnet -> man så bare .mobil-scrim-gradienten
+    // over tomrom ("er det gradienten?", Ricky-rapport 2026-09-05).
+    // img.decode() loser først når det kan males flimmerfritt. Routet via
+    // markContentReady()/reveal() (ikke direkte classList.add) så en modus
+    // som straks byttes ut aldri rekker å vise seg -- se den funksjonens
+    // egen kommentar.
     const markReady = () => markContentReady(myGen)
     const firstImg = slides[currentSlot] ?? slides[0]
-    if (!firstImg || firstImg.complete) markReady()
-    else {
+    if (!firstImg) {
+      markReady()
+    } else if (firstImg.decode) {
+      firstImg.decode().then(markReady, markReady)   // reject (feil/avbrutt) -> vis likevel
+    } else if (firstImg.complete) {
+      markReady()
+    } else {
       firstImg.addEventListener('load', markReady, { once: true, signal: ac.signal })
       firstImg.addEventListener('error', markReady, { once: true, signal: ac.signal })
     }
