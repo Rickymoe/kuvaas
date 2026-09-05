@@ -137,12 +137,14 @@ img { max-width: 100%; display: block; }
 .nav-cta {
   background: var(--terracotta); color: #fff !important; padding: 10px 22px;
   border-radius: 100px; font-size: var(--text-sm); font-weight: 600; transition: background .2s;
+  -webkit-tap-highlight-color: transparent;
 }
 .nav-cta:hover, .nav-cta.active { background: var(--terracotta-dark); }
 .nav-hamburger {
   display: none; flex-direction: column; gap: 5px; background: var(--cream-glass-soft);
   border: none; border-radius: 50%; cursor: pointer; padding: var(--space-2);
   box-shadow: var(--skygge-sm);
+  -webkit-tap-highlight-color: transparent;
 }
 .nav-hamburger span { width: 22px; height: 2px; background: var(--brown); display: block; }
 
@@ -166,6 +168,9 @@ img { max-width: 100%; display: block; }
   border-radius: 100px;
   padding: 8px 18px;
   box-shadow: var(--skygge-sm);
+  -webkit-tap-highlight-color: transparent;   /* mobile's default gray tap
+    flash showed through the glass pill background — Ricky reported it as
+    "something blinking" behind the logo text, 2026-09-05 */
 }
 .nav-links a {
   font-size: var(--text-sm); font-weight: 600; color: var(--brown);
@@ -176,6 +181,7 @@ img { max-width: 100%; display: block; }
   padding: 10px 20px;
   box-shadow: var(--skygge-sm);
   transition: background .2s, box-shadow .2s;
+  -webkit-tap-highlight-color: transparent;
 }
 .nav-links a:hover,
 .nav-links a.active {
